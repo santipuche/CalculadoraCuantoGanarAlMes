@@ -3,71 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#1e40af">
     <title>FinanzasPro | Gestión de Presupuesto</title>
     
-    <link rel="icon" type="image/jpeg" href="https://i.postimg.cc/jd7vBPRB/478b64ec61ff4533a5418e6244be480d.jpg">
-
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    
-    <script crossorigin src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
-    <script crossorigin src="https://unpkg.com/recharts@2.10.3/umd/Recharts.js"></script>
-    
+    <script src="https://unpkg.com/recharts/umd/Recharts.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
-        body { margin: 0; font-family: sans-serif; overscroll-behavior: contain; }
-        .dark { background-color: #0f172a; color: white; }
-        #root { min-height: 100vh; }
-        input, select { min-height: 40px; font-size: 16px !important; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        .animate-pulse { animation: pulse 2s infinite; }
+        body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+        /* Evitar zoom en inputs en iPhone */
+        @media (max-width: 640px) { input, select { font-size: 16px !important; } }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        // Extraer componentes de las librerías globales
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect } = React;
         const { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } = window.Recharts;
 
-        // Componente de Iconos SVG (Simple)
-        const Icon = ({ name, size = 24, className = '' }) => {
+        // --- ICONOS (Reemplazo de Lucide para que funcione en un solo archivo) ---
+        function Icon({ name, size = 20, className = "" }) {
             const icons = {
-                'plus-circle': 'M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zm1-11h4m-5 0V7m0 4v4',
-                'trash-2': 'M3 6h18m-2 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2m-6 5v6m4-6v6',
-                'dollar-sign': 'M12 1v22m5-18H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6',
-                'pie-chart': 'M21.21 15.89A10 10 0 118 2.83M22 12A10 10 0 0012 2v10z',
-                'moon': 'M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z',
-                'sun': 'M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41',
-                'rotate-ccw': 'M1 4v6h6M3.51 15a9 9 0 102.13-9.36L1 10'
+                plus: "M12 5v14M5 12h14",
+                trash: "M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2",
+                dollar: "M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6",
+                chart: "M21.21 15.89A10 10 0 118 2.83M22 12A10 10 0 0012 2v10z",
+                moon: "M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z",
+                sun: "M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42",
+                reset: "M1 4v6h6M3.51 15a9 9 0 102.13-9.36L1 10"
             };
             return (
                 <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                    <path d={icons[name] || ''} />
+                    <path d={icons[name] || ""} />
                 </svg>
             );
-        };
+        }
 
         function App() {
+            // --- AQUÍ ESTÁ TODA TU LÓGICA ORIGINAL ---
             const [transacciones, setTransacciones] = useState([]);
             const [modoOscuro, setModoOscuro] = useState(false);
             const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
             const [cargando, setCargando] = useState(true);
 
-            // Cargar datos
+            // Sistema de guardado para que no se borren los datos al cerrar la web
             useEffect(() => {
-                const trs = localStorage.getItem('transacciones');
-                const dark = localStorage.getItem('modoOscuro');
-                if (trs) setTransacciones(JSON.parse(trs));
-                if (dark) setModoOscuro(JSON.parse(dark));
+                const datos = localStorage.getItem('transacciones');
+                if (datos) setTransacciones(JSON.parse(datos));
+                const modo = localStorage.getItem('modoOscuro');
+                if (modo) setModoOscuro(JSON.parse(modo));
                 setCargando(false);
             }, []);
 
-            // Guardar datos
             useEffect(() => {
                 if (!cargando) {
                     localStorage.setItem('transacciones', JSON.stringify(transacciones));
@@ -75,153 +67,152 @@
                 }
             }, [transacciones, modoOscuro, cargando]);
 
+            const categoriasGastos = { casa: 'Casa', entretenimiento: 'Entretenimiento', transporte: 'Transporte', tarjetas: 'Tarjetas', alimento: 'Alimento', impuestos: 'Impuestos', cuidadoPersonal: 'Cuidado Personal', varios: 'Varios', seguros: 'Seguros', ahorros: 'Ahorros' };
+            const categoriasIngresos = { salario: 'Salario', freelance: 'Freelance', inversiones: 'Inversiones', alquiler: 'Alquiler', negocio: 'Negocio', bonos: 'Bonos', otros: 'Otros' };
+            const categoriasDeudas = { prestamo: 'Préstamo Personal', hipoteca: 'Hipoteca', tarjetaCredito: 'Tarjeta de Crédito', otros: 'Otros' };
+
             const agregarTransaccion = () => {
                 const hoy = new Date().toISOString().split('T')[0];
-                setTransacciones([...transacciones, { 
-                    tipo: 'gasto', categoria: 'casa', concepto: '', monto: 0, interes: 0, fecha: hoy 
-                }]);
+                setTransacciones([...transacciones, { tipo: 'gasto', categoria: 'casa', concepto: '', monto: 0, interes: 0, fecha: hoy }]);
             };
 
             const actualizarTransaccion = (index, campo, valor) => {
                 const nuevas = [...transacciones];
-                if (campo === 'monto' || campo === 'interes') {
-                    nuevas[index][campo] = parseFloat(valor) || 0;
-                } else if (campo === 'tipo') {
-                    nuevas[index].tipo = valor;
-                    nuevas[index].categoria = valor === 'gasto' ? 'casa' : valor === 'ingreso' ? 'salario' : 'prestamo';
-                } else {
-                    nuevas[index][campo] = valor;
-                }
+                nuevas[index][campo] = campo === 'monto' || campo === 'interes' ? parseFloat(valor) || 0 : valor;
                 setTransacciones(nuevas);
             };
 
-            // Cálculos
-            const calcTotal = (t) => t.tipo === 'deuda' ? (t.monto + (t.monto * (t.interes || 0) / 100)) : t.monto;
-            
-            const resumen = useMemo(() => {
-                const ingresos = transacciones.filter(t => t.tipo === 'ingreso').reduce((s, t) => s + t.monto, 0);
-                const gastos = transacciones.filter(t => t.tipo === 'gasto').reduce((s, t) => s + t.monto, 0);
-                const deudas = transacciones.filter(t => t.tipo === 'deuda').reduce((s, t) => s + calcTotal(t), 0);
-                return { ingresos, gastos, deudas, balance: ingresos - gastos - deudas };
-            }, [transacciones]);
+            const eliminarTransaccion = (index) => setTransacciones(transacciones.filter((_, i) => i !== index));
+            const reiniciar = () => { setTransacciones([]); setMostrarConfirmacion(false); };
 
-            const prepararDatos = (tipo) => {
-                const data = {};
-                transacciones.filter(t => t.tipo === tipo).forEach(t => {
-                    const cat = t.categoria || 'Otro';
-                    data[cat] = (data[cat] || 0) + calcTotal(t);
-                });
-                return Object.entries(data).map(([name, value]) => ({ name, value }));
+            const calcularTotalDeuda = (monto, interes) => monto + (monto * (interes / 100));
+
+            const totalIngresos = transacciones.filter(t => t.tipo === 'ingreso').reduce((sum, t) => sum + t.monto, 0);
+            const totalGastos = transacciones.filter(t => t.tipo === 'gasto').reduce((sum, t) => sum + t.monto, 0);
+            const totalDeudas = transacciones.filter(t => t.tipo === 'deuda').reduce((sum, t) => sum + calcularTotalDeuda(t.monto, t.interes), 0);
+            const diferencia = totalIngresos - totalGastos - totalDeudas;
+
+            // --- COLORES Y PROCESAMIENTO DE DATOS PARA GRÁFICOS ---
+            const COLORES = { ingreso: ['#065f46', '#10b981', '#34d399'], gasto: ['#dc2626', '#f87171', '#fca5a5'], deuda: ['#d97706', '#fbbf24', '#fcd34d'] };
+
+            const prepararDatos = (tipo, categorias) => {
+                return Object.entries(categorias).map(([key, nombre]) => {
+                    const total = transacciones.filter(t => t.tipo === tipo && t.categoria === key)
+                        .reduce((sum, t) => sum + (tipo === 'deuda' ? calcularTotalDeuda(t.monto, t.interes) : t.monto), 0);
+                    return { name: nombre, value: total };
+                }).filter(d => d.value > 0);
             };
 
-            if (cargando) return <div className="flex h-screen items-center justify-center">Cargando...</div>;
+            if (cargando) return <div className="h-screen flex items-center justify-center bg-slate-50">Cargando...</div>;
 
             return (
-                <div className={`${modoOscuro ? 'dark' : ''}`}>
-                    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 transition-colors">
-                        <div className="max-w-4xl mx-auto">
-                            {/* Header */}
-                            <div className="flex justify-between items-center mb-6">
-                                <h1 className="text-2xl font-bold text-blue-600 flex items-center gap-2">
-                                    <Icon name="dollar-sign" /> FinanzasPro
-                                </h1>
-                                <div className="flex gap-2">
-                                    <button onClick={() => setMostrarConfirmacion(true)} className="p-2 bg-red-500 text-white rounded-lg"><Icon name="rotate-ccw" size={20}/></button>
-                                    <button onClick={() => setModoOscuro(!modoOscuro)} className="p-2 bg-slate-200 dark:bg-slate-700 rounded-lg">
-                                        <Icon name={modoOscuro ? 'sun' : 'moon'} size={20}/>
-                                    </button>
-                                </div>
+                <div className={`min-h-screen ${modoOscuro ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-800'} p-3 sm:p-6 transition-colors`}>
+                    <div className="max-w-6xl mx-auto">
+                        
+                        {/* HEADER */}
+                        <div className="flex justify-between items-center mb-6">
+                            <div>
+                                <h1 className="text-2xl sm:text-3xl font-bold">FinanzasPro</h1>
+                                <p className="text-sm opacity-70">Control de ingresos y deudas</p>
                             </div>
-
-                            {/* Cards */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border-l-4 border-green-500">
-                                    <p className="text-xs text-slate-500">Ingresos</p>
-                                    <p className="text-lg font-bold">${resumen.ingresos.toFixed(2)}</p>
-                                </div>
-                                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border-l-4 border-red-500">
-                                    <p className="text-xs text-slate-500">Gastos</p>
-                                    <p className="text-lg font-bold">${resumen.gastos.toFixed(2)}</p>
-                                </div>
-                                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border-l-4 border-yellow-500">
-                                    <p className="text-xs text-slate-500">Deudas</p>
-                                    <p className="text-lg font-bold">${resumen.deudas.toFixed(2)}</p>
-                                </div>
-                                <div className={`bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border-l-4 ${resumen.balance >= 0 ? 'border-blue-500' : 'border-orange-500'}`}>
-                                    <p className="text-xs text-slate-500">Balance</p>
-                                    <p className="text-lg font-bold">${resumen.balance.toFixed(2)}</p>
-                                </div>
-                            </div>
-
-                            {/* Graficos */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                                <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm h-64">
-                                    <h3 className="text-sm font-bold mb-4">Distribución de Gastos</h3>
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie data={prepararDatos('gasto')} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={50}>
-                                                {prepararDatos('gasto').map((e, i) => <Cell key={i} fill={['#ef4444', '#f87171', '#b91c1c'][i % 3]} />)}
-                                            </Pie>
-                                            <Tooltip />
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                </div>
-                                <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm h-64">
-                                    <h3 className="text-sm font-bold mb-4">Ingresos vs Gastos</h3>
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie data={[{name: 'Ingresos', value: resumen.ingresos}, {name: 'Egresos', value: resumen.gastos + resumen.deudas}]} dataKey="value" cx="50%" cy="50%" innerRadius={40} outerRadius={60}>
-                                                <Cell fill="#10b981" /><Cell fill="#ef4444" />
-                                            </Pie>
-                                            <Tooltip />
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </div>
-
-                            {/* Transacciones */}
-                            <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm">
-                                <div className="flex justify-between mb-4">
-                                    <h2 className="font-bold">Transacciones</h2>
-                                    <button onClick={agregarTransaccion} className="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm flex items-center gap-1">
-                                        <Icon name="plus-circle" size={16}/> Añadir
-                                    </button>
-                                </div>
-                                <div className="space-y-3">
-                                    {transacciones.map((t, i) => (
-                                        <div key={i} className="flex flex-col p-3 border dark:border-slate-700 rounded-xl gap-2">
-                                            <div className="flex gap-2">
-                                                <input type="date" value={t.fecha} onChange={e => actualizarTransaccion(i, 'fecha', e.target.value)} className="bg-transparent text-xs w-full" />
-                                                <select value={t.tipo} onChange={e => actualizarTransaccion(i, 'tipo', e.target.value)} className="bg-transparent text-xs font-bold">
-                                                    <option value="gasto">Gasto</option>
-                                                    <option value="ingreso">Ingreso</option>
-                                                    <option value="deuda">Deuda</option>
-                                                </select>
-                                                <button onClick={() => setTransacciones(transacciones.filter((_, idx) => idx !== i))} className="text-red-500"><Icon name="trash-2" size={16}/></button>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <input type="text" placeholder="Concepto" value={t.concepto} onChange={e => actualizarTransaccion(i, 'concepto', e.target.value)} className="bg-slate-100 dark:bg-slate-700 p-2 rounded text-sm flex-1" />
-                                                <input type="number" placeholder="Monto" value={t.monto || ''} onChange={e => actualizarTransaccion(i, 'monto', e.target.value)} className="bg-slate-100 dark:bg-slate-700 p-2 rounded text-sm w-24" />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                            <div className="flex gap-2">
+                                <button onClick={() => setMostrarConfirmacion(true)} className="p-2 bg-red-600 text-white rounded-lg"><Icon name="reset" /></button>
+                                <button onClick={() => setModoOscuro(!modoOscuro)} className="p-2 bg-slate-200 dark:bg-slate-700 rounded-lg text-yellow-500">
+                                    <Icon name={modoOscuro ? "sun" : "moon"} />
+                                </button>
                             </div>
                         </div>
 
-                        {/* Modal */}
-                        {mostrarConfirmacion && (
-                            <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-                                <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl max-w-sm w-full">
-                                    <p className="font-bold mb-4">¿Reiniciar todos los datos?</p>
-                                    <div className="flex justify-end gap-2">
-                                        <button onClick={() => setMostrarConfirmacion(false)} className="px-4 py-2">No</button>
-                                        <button onClick={() => { localStorage.clear(); location.reload(); }} className="px-4 py-2 bg-red-600 text-white rounded-xl">Sí, borrar</button>
+                        {/* RESUMEN DE TARJETAS */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                            <div className="bg-green-100 dark:bg-green-900/30 p-4 rounded-xl border border-green-200 dark:border-green-800">
+                                <p className="text-xs text-green-600 uppercase font-bold">Ingresos</p>
+                                <p className="text-xl font-bold">${totalIngresos.toFixed(2)}</p>
+                            </div>
+                            <div className="bg-red-100 dark:bg-red-900/30 p-4 rounded-xl border border-red-200 dark:border-red-800">
+                                <p className="text-xs text-red-600 uppercase font-bold">Gastos</p>
+                                <p className="text-xl font-bold">${totalGastos.toFixed(2)}</p>
+                            </div>
+                            <div className="bg-yellow-100 dark:bg-yellow-900/30 p-4 rounded-xl border border-yellow-200 dark:border-yellow-800">
+                                <p className="text-xs text-yellow-600 uppercase font-bold">Deudas</p>
+                                <p className="text-xl font-bold">${totalDeudas.toFixed(2)}</p>
+                            </div>
+                            <div className={`p-4 rounded-xl border ${diferencia >= 0 ? 'bg-blue-100 dark:bg-blue-900/30 border-blue-200' : 'bg-orange-100 dark:bg-orange-900/30 border-orange-200'}`}>
+                                <p className="text-xs uppercase font-bold">Balance</p>
+                                <p className="text-xl font-bold">${diferencia.toFixed(2)}</p>
+                            </div>
+                        </div>
+
+                        {/* LISTA DE TRANSACCIONES */}
+                        <div className={`${modoOscuro ? 'bg-slate-800' : 'bg-white'} rounded-2xl shadow-lg p-4 mb-6`}>
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl font-bold">Transacciones</h2>
+                                <button onClick={agregarTransaccion} className="flex items-center gap-1 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">
+                                    <Icon name="plus" size={16} /> Agregar
+                                </button>
+                            </div>
+                            
+                            <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
+                                {transacciones.map((t, i) => (
+                                    <div key={i} className={`p-3 rounded-lg border ${modoOscuro ? 'border-slate-700 bg-slate-900/50' : 'border-slate-100 bg-slate-50'} flex flex-wrap gap-2 items-center`}>
+                                        <input type="date" value={t.fecha} onChange={e => actualizarTransaccion(i, 'fecha', e.target.value)} className="bg-transparent text-xs outline-none" />
+                                        <select value={t.tipo} onChange={e => actualizarTransaccion(i, 'tipo', e.target.value)} className="bg-transparent text-xs font-bold outline-none">
+                                            <option value="gasto">Gasto</option>
+                                            <option value="ingreso">Ingreso</option>
+                                            <option value="deuda">Deuda</option>
+                                        </select>
+                                        <input type="text" placeholder="Concepto" value={t.concepto} onChange={e => actualizarTransaccion(i, 'concepto', e.target.value)} className="flex-1 bg-transparent text-xs outline-none min-w-[100px]" />
+                                        <div className="flex items-center gap-1 bg-white dark:bg-slate-800 px-2 py-1 rounded border dark:border-slate-700">
+                                            <span className="text-xs opacity-50">$</span>
+                                            <input type="number" value={t.monto || ''} onChange={e => actualizarTransaccion(i, 'monto', e.target.value)} className="w-20 bg-transparent text-xs outline-none font-bold" />
+                                        </div>
+                                        {t.tipo === 'deuda' && (
+                                            <div className="flex items-center gap-1 text-xs text-yellow-600">
+                                                <span>Int:</span>
+                                                <input type="number" value={t.interes || ''} onChange={e => actualizarTransaccion(i, 'interes', e.target.value)} className="w-10 bg-transparent outline-none font-bold" />
+                                                <span>%</span>
+                                            </div>
+                                        )}
+                                        <button onClick={() => eliminarTransaccion(i)} className="text-red-500 p-1"><Icon name="trash" size={16} /></button>
                                     </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* GRÁFICOS */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {['ingreso', 'gasto', 'deuda'].map(tipo => {
+                                const datos = prepararDatos(tipo, tipo === 'ingreso' ? categoriasIngresos : tipo === 'gasto' ? categoriasGastos : categoriasDeudas);
+                                return (
+                                    <div key={tipo} className={`${modoOscuro ? 'bg-slate-800' : 'bg-white'} p-4 rounded-2xl shadow-lg h-64`}>
+                                        <h3 className="text-center capitalize font-bold mb-2">{tipo}s</h3>
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie data={datos} cx="50%" cy="50%" innerRadius={40} outerRadius={60} dataKey="value">
+                                                    {datos.map((entry, index) => <Cell key={index} fill={COLORES[tipo][index % 3]} />)}
+                                                </Pie>
+                                                <Tooltip />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* MODAL CONFIRMACION */}
+                    {mostrarConfirmacion && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                            <div className={`${modoOscuro ? 'bg-slate-800' : 'bg-white'} p-6 rounded-2xl max-w-sm w-full shadow-2xl`}>
+                                <h3 className="text-xl font-bold mb-2">¿Reiniciar todo?</h3>
+                                <p className="text-sm opacity-70 mb-6">Se borrarán todas las transacciones guardadas.</p>
+                                <div className="flex gap-3">
+                                    <button onClick={() => setMostrarConfirmacion(false)} className="flex-1 py-2 rounded-lg border border-slate-300">Cancelar</button>
+                                    <button onClick={reiniciar} className="flex-1 py-2 bg-red-600 text-white rounded-lg">Sí, borrar</button>
                                 </div>
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
             );
         }
