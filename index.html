@@ -7,26 +7,24 @@
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#0f172a">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/552/552791.png">
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/recharts/umd/Recharts.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/recharts/umd/Recharts.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
         body { background-color: #0f172a; margin: 0; color: white; font-family: sans-serif; }
-        .loading-screen { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #3b82f6; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        .btn-retry { background: #3b82f6; padding: 12px 24px; border-radius: 15px; font-bold; margin-top: 20px; }
     </style>
 </head>
 <body>
     <div id="root">
-        <div class="loading-screen">
-            <div class="spinner"></div>
-            <p style="margin-top: 15px; opacity: 0.5;">Cargando FinanzasPro...</p>
+        <div style="height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px;">
+            <p>Cargando componentes...</p>
+            <p style="font-size: 10px; opacity: 0.5; margin-top: 10px;">Si esto tarda mucho, toca el botón de abajo</p>
+            <button onclick="window.location.reload(true)" class="btn-retry">Recargar App</button>
         </div>
     </div>
 
@@ -34,54 +32,44 @@
         const { useState, useEffect } = React;
 
         function App() {
-            // Verificamos que Recharts cargó antes de renderizar
-            if (!window.Recharts) {
+            // Verificamos si la librería existe en el objeto global del navegador
+            const LibGraficos = window.Recharts;
+
+            if (!LibGraficos) {
                 return (
-                    <div className="p-10 text-center">
-                        <p className="text-red-400">Error: Librería de gráficos no detectada.</p>
-                        <button onClick={() => window.location.reload()} className="mt-4 bg-blue-600 px-4 py-2 rounded">Reintentar</button>
+                    <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+                        <h2 className="text-xl font-bold text-red-400">⚠️ Error de Conexión</h2>
+                        <p className="opacity-60 mt-2">No se pudo cargar la librería de gráficos.</p>
+                        <button onClick={() => window.location.reload(true)} className="mt-6 bg-blue-600 px-6 py-3 rounded-2xl font-bold">
+                            Reintentar ahora
+                        </button>
                     </div>
                 );
             }
 
-            const { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } = window.Recharts;
-            const [monto, setMonto] = useState(0);
-
             return (
-                <div className="min-h-screen p-6 bg-slate-950">
-                    <header className="mb-8 flex justify-between items-center">
-                        <h1 className="text-3xl font-black text-blue-500">FinanzasPro</h1>
-                        <span className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-1 rounded">v1.2</span>
-                    </header>
-
-                    <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-8 rounded-[2.5rem] shadow-2xl text-center mb-8">
-                        <p className="text-xs font-bold uppercase tracking-widest opacity-70 mb-1">Tu Saldo Actual</p>
-                        <h2 className="text-5xl font-black">${monto.toLocaleString('es-AR')}</h2>
+                <div className="min-h-screen bg-slate-950 p-6">
+                    <h1 className="text-3xl font-black text-blue-500 mb-6 text-center">FinanzasPro</h1>
+                    <div className="bg-blue-600 p-8 rounded-[2.5rem] text-center shadow-2xl">
+                        <p className="text-xs font-bold uppercase opacity-70">App Lista</p>
+                        <h2 className="text-4xl font-black">$0</h2>
                     </div>
-
-                    <div className="bg-slate-900 border border-white/5 p-6 rounded-[2rem]">
-                        <h3 className="font-bold mb-4 text-slate-400 text-sm uppercase">Control Rápido</h3>
-                        <div className="flex gap-2">
-                            <button onClick={() => setMonto(monto + 10000)} className="flex-1 bg-emerald-600 py-4 rounded-2xl font-bold active:scale-95 transition">
-                                + $10k
-                            </button>
-                            <button onClick={() => setMonto(monto - 5000)} className="flex-1 bg-red-600 py-4 rounded-2xl font-bold active:scale-95 transition">
-                                - $5k
-                            </button>
-                        </div>
-                    </div>
-
-                    <p className="text-[10px] text-center mt-10 opacity-20">Desplegado en GitHub Pages por @santipuche</p>
+                    <p className="text-center mt-8 opacity-40 text-[10px]">Librerías cargadas correctamente ✅</p>
                 </div>
             );
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        // Renderizado seguro
+        try {
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(<App />);
+        } catch (e) {
+            console.error("Fallo al iniciar React", e);
+        }
 
-        // Registro de Service Worker usando tu sw.js
+        // Service Worker
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js').catch(err => console.log("SW: ", err));
+            navigator.serviceWorker.register('./sw.js').catch(err => console.log(err));
         }
     </script>
 </body>
