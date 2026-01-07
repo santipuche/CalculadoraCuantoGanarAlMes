@@ -1,16 +1,10 @@
-const cacheName = 'v1';
-const cacheAssets = ['index.html', 'manifest.json'];
+const cacheName = 'finanzas-v1';
+const assets = ['./', './index.html', './manifest.json'];
 
-// Instalación del Service Worker
 self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(cacheName).then(cache => {
-      cache.addAll(cacheAssets);
-    })
-  );
+    e.waitUntil(caches.open(cacheName).then(cache => cache.addAll(assets)));
 });
 
-// Estrategia de carga: Intenta internet, si no, usa el caché
 self.addEventListener('fetch', e => {
-  e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+    e.respondWith(caches.match(e.request).then(res => res || fetch(e.request)));
 });
