@@ -5,72 +5,144 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>FinanzasPro Argentina</title>
     
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/recharts/umd/Recharts.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#0f172a">
+
     <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/recharts/umd/Recharts.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
-<body style="background-color: #0f172a; color: white; margin: 0; font-family: sans-serif;">
-    <div id="root">
-        <div style="height: 100vh; display: flex; align-items: center; justify-content: center;">
-            <p>Conectando con el servidor...</p>
-        </div>
-    </div>
+<body class="bg-slate-950 text-slate-100 font-sans">
+    <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect } = React;
 
         function App() {
-            // Detectamos si Recharts está disponible o no
-            const rechartsDisponible = !!window.Recharts;
-            const [monto, setMonto] = useState(0);
+            // --- LÓGICA DE NEGOCIO ORIGINAL ---
+            const [transacciones, setTransacciones] = useState([]);
+            const [cargando, setCargando] = useState(true);
+            const graficosListos = !!window.Recharts;
+
+            useEffect(() => {
+                const guardado = localStorage.getItem('finanzas_arg_data');
+                if (guardado) setTransacciones(JSON.parse(guardado));
+                setCargando(false);
+            }, []);
+
+            useEffect(() => {
+                if (!cargando) localStorage.setItem('finanzas_arg_data', JSON.stringify(transacciones));
+            }, [transacciones, cargando]);
+
+            const agregar = (tipo) => {
+                const nueva = {
+                    tipo,
+                    monto: 0,
+                    concepto: '',
+                    interes: tipo === 'deuda' ? 0 : null,
+                    fecha: new Date().toISOString().split('T')[0]
+                };
+                setTransacciones([nueva, ...transacciones]);
+            };
+
+            const actualizar = (i, campo, valor) => {
+                const nuevas = [...transacciones];
+                nuevas[i][campo] = (campo === 'monto' || campo === 'interes') ? parseFloat(valor) || 0 : valor;
+                setTransacciones(nuevas);
+            };
+
+            const eliminar = (i) => setTransacciones(transacciones.filter((_, idx) => idx !== i));
+
+            // Cálculos
+            const totalIngresos = transacciones.filter(t => t.tipo === 'ingreso').reduce((s, t) => s + t.monto, 0);
+            const totalGastos = transacciones.filter(t => t.tipo === 'gasto').reduce((s, t) => s + t.monto, 0);
+            const totalDeudas = transacciones.filter(t => t.tipo === 'deuda').reduce((s, t) => s + (t.monto * (1 + (t.interes/100))), 0);
+            const balance = totalIngresos - totalGastos - totalDeudas;
+
+            if (cargando) return <div className="h-screen flex items-center justify-center">Iniciando...</div>;
 
             return (
-                <div className="min-h-screen p-6 bg-slate-950">
-                    <header className="mb-8 flex justify-between items-center">
+                <div className="min-h-screen p-4 max-w-md mx-auto pb-20">
+                    <header className="flex justify-between items-center mb-6">
                         <h1 className="text-2xl font-black text-blue-500">FinanzasPro</h1>
-                        {/* Indicador de estado para que sepas si cargó el gráfico */}
-                        <span className={`text-[10px] px-2 py-1 rounded ${rechartsDisponible ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-                            {rechartsDisponible ? 'Gráficos: OK' : 'Modo: Solo Texto'}
-                        </span>
+                        {!graficosListos && <span className="text-[10px] bg-amber-500/20 text-amber-500 px-2 py-1 rounded-full font-bold">Modo Texto</span>}
                     </header>
 
-                    <div className="bg-blue-600 p-8 rounded-[2.5rem] shadow-2xl text-center mb-8">
-                        <p className="text-xs font-bold uppercase tracking-widest opacity-70 mb-1">Saldo Actual</p>
-                        <h2 className="text-5xl font-black">${monto.toLocaleString('es-AR')}</h2>
+                    {/* TARJETA DE BALANCE PRINCIPAL */}
+                    <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-8 rounded-[2.5rem] shadow-2xl mb-8 text-center">
+                        <p className="text-xs font-bold uppercase tracking-widest opacity-70 mb-1">Saldo Estimado</p>
+                        <h2 className="text-5xl font-black">${balance.toLocaleString('es-AR')}</h2>
                     </div>
 
-                    {/* GRÁFICO: Solo se muestra si la librería cargó */}
-                    {rechartsDisponible ? (
-                        <div className="bg-slate-900 p-6 rounded-[2rem] h-48 mb-8 flex items-center justify-center">
-                           <p className="text-xs opacity-50 italic">El gráfico aparecerá cuando agregues datos.</p>
-                        </div>
-                    ) : (
-                        <div className="bg-slate-900/50 border border-dashed border-white/10 p-6 rounded-[2rem] mb-8 text-center">
-                            <p className="text-xs opacity-40">Gráficos no disponibles en este navegador.<br/>Puedes usar la calculadora normalmente.</p>
-                        </div>
-                    )}
-
-                    <div className="bg-slate-900 border border-white/5 p-6 rounded-[2rem]">
-                        <h3 className="font-bold mb-4 text-slate-400 text-sm uppercase">Acciones</h3>
-                        <div className="grid grid-cols-1 gap-3">
-                            <button onClick={() => setMonto(monto + 50000)} className="bg-emerald-600 py-4 rounded-2xl font-bold active:scale-95 transition">
-                                + Ganancia ($50.000)
-                            </button>
-                            <button onClick={() => setMonto(0)} className="bg-slate-800 py-4 rounded-2xl font-bold active:scale-95 transition text-xs opacity-50">
-                                Reiniciar
-                            </button>
-                        </div>
+                    {/* ACCIONES RÁPIDAS */}
+                    <div className="grid grid-cols-3 gap-2 mb-8">
+                        <button onClick={() => agregar('ingreso')} className="bg-emerald-600 py-3 rounded-2xl text-[10px] font-bold uppercase tracking-tighter">+ Ingreso</button>
+                        <button onClick={() => agregar('gasto')} className="bg-red-600 py-3 rounded-2xl text-[10px] font-bold uppercase tracking-tighter">+ Gasto</button>
+                        <button onClick={() => agregar('deuda')} className="bg-amber-600 py-3 rounded-2xl text-[10px] font-bold uppercase tracking-tighter">+ Deuda</button>
                     </div>
 
-                    <p className="text-[10px] text-center mt-10 opacity-20">Link directo: santipuche.github.io</p>
+                    {/* LISTADO DE MOVIMIENTOS */}
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-bold opacity-50 uppercase mb-2">Movimientos Recientes</h3>
+                        {transacciones.map((t, i) => (
+                            <div key={i} className="bg-slate-900 border border-white/5 p-4 rounded-2xl">
+                                <div className="flex justify-between items-start mb-2">
+                                    <select 
+                                        value={t.tipo} 
+                                        onChange={(e) => actualizar(i, 'tipo', e.target.value)}
+                                        className="bg-transparent text-xs font-bold uppercase outline-none text-blue-400"
+                                    >
+                                        <option value="ingreso">Ingreso</option>
+                                        <option value="gasto">Gasto</option>
+                                        <option value="deuda">Deuda</option>
+                                    </select>
+                                    <button onClick={() => eliminar(i)} className="text-red-500 opacity-50 text-xs">Borrar</button>
+                                </div>
+                                <div className="flex gap-2">
+                                    <input 
+                                        type="text" 
+                                        placeholder="Concepto..." 
+                                        value={t.concepto} 
+                                        onChange={(e) => actualizar(i, 'concepto', e.target.value)}
+                                        className="bg-slate-800/50 flex-1 p-2 rounded-xl text-sm outline-none border border-white/5"
+                                    />
+                                    <div className="bg-slate-800 p-2 rounded-xl border border-white/5 flex items-center">
+                                        <span className="text-xs opacity-50 mr-1">$</span>
+                                        <input 
+                                            type="number" 
+                                            value={t.monto || ''} 
+                                            onChange={(e) => actualizar(i, 'monto', e.target.value)}
+                                            className="w-16 bg-transparent outline-none text-sm font-bold"
+                                        />
+                                    </div>
+                                </div>
+                                {t.tipo === 'deuda' && (
+                                    <div className="mt-2 flex items-center gap-2 text-[10px] text-amber-500 font-bold bg-amber-500/10 p-2 rounded-lg">
+                                        <span>INTERÉS ANUAL:</span>
+                                        <input 
+                                            type="number" 
+                                            value={t.interes || ''} 
+                                            onChange={(e) => actualizar(i, 'interes', e.target.value)}
+                                            className="bg-transparent w-8 outline-none border-b border-amber-500/30"
+                                        />
+                                        <span>%</span>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
                 </div>
             );
         }
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').catch(() => {});
+        }
     </script>
 </body>
 </html>
