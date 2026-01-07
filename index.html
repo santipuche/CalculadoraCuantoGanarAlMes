@@ -7,6 +7,7 @@
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#0f172a">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/552/552791.png">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -16,82 +17,71 @@
 
     <style>
         body { background-color: #0f172a; margin: 0; color: white; font-family: sans-serif; }
-        #error-display { display: none; background: #450a0a; color: #fca5a5; padding: 15px; margin: 10px; border-radius: 10px; border: 1px solid #991b1b; font-size: 12px; }
+        .loading-screen { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #3b82f6; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
-    <div id="error-display">
-        <strong style="display:block; margin-bottom:5px;">⚠️ ERROR DE CARGA DETECTADO:</strong>
-        <div id="error-text"></div>
-    </div>
-
     <div id="root">
-        <div style="height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-            <div style="width: 40px; height: 40px; border: 4px solid #3b82f6; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-            <p style="margin-top: 15px; opacity: 0.6;">Iniciando FinanzasPro...</p>
+        <div class="loading-screen">
+            <div class="spinner"></div>
+            <p style="margin-top: 15px; opacity: 0.5;">Cargando FinanzasPro...</p>
         </div>
     </div>
 
-    <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
-
     <script type="text/babel">
-        // Capturador de errores global
-        window.onerror = function(msg, url, line) {
-            document.getElementById('error-display').style.display = 'block';
-            document.getElementById('error-text').innerHTML = `Error: ${msg} <br/> Línea: ${line}`;
-        };
-
         const { useState, useEffect } = React;
 
         function App() {
-            const [data, setData] = useState([]);
-
-            // Verificación de librerías
+            // Verificamos que Recharts cargó antes de renderizar
             if (!window.Recharts) {
-                throw new Error("La librería de gráficos (Recharts) no cargó correctamente.");
+                return (
+                    <div className="p-10 text-center">
+                        <p className="text-red-400">Error: Librería de gráficos no detectada.</p>
+                        <button onClick={() => window.location.reload()} className="mt-4 bg-blue-600 px-4 py-2 rounded">Reintentar</button>
+                    </div>
+                );
             }
 
-            const { PieChart, Pie, Cell, ResponsiveContainer } = window.Recharts;
+            const { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } = window.Recharts;
+            const [monto, setMonto] = useState(0);
 
             return (
                 <div className="min-h-screen p-6 bg-slate-950">
-                    <header className="mb-8">
+                    <header className="mb-8 flex justify-between items-center">
                         <h1 className="text-3xl font-black text-blue-500">FinanzasPro</h1>
-                        <p className="text-xs opacity-50">App Argentina v1.1</p>
+                        <span className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-1 rounded">v1.2</span>
                     </header>
 
-                    <div className="bg-blue-600 p-8 rounded-[2.5rem] shadow-2xl shadow-blue-500/20 text-center mb-8">
-                        <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">Saldo Estimado</span>
-                        <h2 className="text-5xl font-black mt-1">$0</h2>
+                    <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-8 rounded-[2.5rem] shadow-2xl text-center mb-8">
+                        <p className="text-xs font-bold uppercase tracking-widest opacity-70 mb-1">Tu Saldo Actual</p>
+                        <h2 className="text-5xl font-black">${monto.toLocaleString('es-AR')}</h2>
                     </div>
 
                     <div className="bg-slate-900 border border-white/5 p-6 rounded-[2rem]">
-                        <h3 className="font-bold mb-4 text-slate-400 text-sm uppercase tracking-tighter">Acciones rápidas</h3>
-                        <button 
-                            onClick={() => alert("¡App conectada correctamente!")}
-                            className="w-full bg-slate-800 py-4 rounded-2xl font-bold border border-white/5 active:scale-95 transition"
-                        >
-                            Verificar Conexión
-                        </button>
+                        <h3 className="font-bold mb-4 text-slate-400 text-sm uppercase">Control Rápido</h3>
+                        <div className="flex gap-2">
+                            <button onClick={() => setMonto(monto + 10000)} className="flex-1 bg-emerald-600 py-4 rounded-2xl font-bold active:scale-95 transition">
+                                + $10k
+                            </button>
+                            <button onClick={() => setMonto(monto - 5000)} className="flex-1 bg-red-600 py-4 rounded-2xl font-bold active:scale-95 transition">
+                                - $5k
+                            </button>
+                        </div>
                     </div>
 
-                    <p className="text-[10px] text-center mt-10 opacity-20">GitHub Pages Deployment Active</p>
+                    <p className="text-[10px] text-center mt-10 opacity-20">Desplegado en GitHub Pages por @santipuche</p>
                 </div>
             );
         }
 
-        try {
-            const root = ReactDOM.createRoot(document.getElementById('root'));
-            root.render(<App />);
-            
-            // Registro de Service Worker (Imagen 2)
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(() => console.log("PWA: Service Worker Activo"))
-                    .catch(err => console.log("PWA: Error", err));
-            }
-        } catch (e) {
-            window.onerror(e.message, null, "React Render");
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+
+        // Registro de Service Worker usando tu sw.js
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').catch(err => console.log("SW: ", err));
         }
     </script>
 </body>
