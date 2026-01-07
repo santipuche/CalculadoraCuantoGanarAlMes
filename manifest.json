@@ -1,10 +1,10 @@
 {
-  "name": "Calculadora De Objetivo Menusal",
-  "short_name": "CalculadoraObjMens",
-  "start_url": "index.html",
+  "name": "Calculadora Finanzas Argentina",
+  "short_name": "Finanzas",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#007bff",
+  "background_color": "#0f172a",
+  "theme_color": "#2563eb",
   "icons": [
     {
       "src": "https://cdn-icons-png.flaticon.com/512/552/552791.png",
