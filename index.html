@@ -3,235 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FinanzasPro | Gestión de Presupuesto</title>
+    <title>FinanzasPro Argentina</title>
     
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0f172a">
+    <link rel="manifest" href="./manifest.json">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/552/552791.png">
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/recharts/umd/Recharts.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-    <style>
-        * { -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; padding: 0; overscroll-behavior: contain; }
-        .dark-scrollbar::-webkit-scrollbar { width: 8px; }
-        .dark-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-        @media (max-width: 640px) { input, select { font-size: 16px !important; } }
-    </style>
 </head>
-<body>
-    <div id="root"></div>
+<body class="bg-slate-950">
+    <div id="root">
+        <div id="loader" class="h-screen flex items-center justify-center text-white font-sans text-center p-6">
+            <div>
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                <p class="text-xl font-bold">Iniciando FinanzasPro...</p>
+                <p class="text-sm opacity-50 mt-2">Si esta pantalla no desaparece, revisa tu conexión.</p>
+            </div>
+        </div>
+    </div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
-        const { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } = window.Recharts;
-
-        // --- COMPONENTE DE ICONOS ---
-        function Icon({ name, size = 20, className = "" }) {
-            const icons = {
-                plus: "M12 5v14M5 12h14",
-                trash: "M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2",
-                dollar: "M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6",
-                chart: "M21.21 15.89A10 10 0 118 2.83M22 12A10 10 0 0012 2v10z",
-                moon: "M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z",
-                sun: "M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42",
-                reset: "M1 4v6h6M3.51 15a9 9 0 102.13-9.36L1 10"
-            };
-            return (
-                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                    <path d={icons[name] || ""} />
-                </svg>
-            );
-        }
-
-        function PresupuestoMensual() {
-            // --- ESTADO INICIAL ---
-            const [transacciones, setTransacciones] = useState([]);
-            const [modoOscuro, setModoOscuro] = useState(true);
-            const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
-            const [cargando, setCargando] = useState(true);
-
-            // --- CARGAR / GUARDAR DATOS (LocalStorage) ---
-            useEffect(() => {
-                const t = localStorage.getItem('transacciones');
-                if (t) setTransacciones(JSON.parse(t));
-                const m = localStorage.getItem('modoOscuro');
-                if (m) setModoOscuro(JSON.parse(m));
-                setCargando(false);
-            }, []);
-
-            useEffect(() => {
-                if (!cargando) {
-                    localStorage.setItem('transacciones', JSON.stringify(transacciones));
-                    localStorage.setItem('modoOscuro', JSON.stringify(modoOscuro));
-                }
-            }, [transacciones, modoOscuro, cargando]);
-
-            // --- CATEGORÍAS ---
-            const categoriasGastos = { casa: 'Casa', entretenimiento: 'Entretenimiento', transporte: 'Transporte', tarjetas: 'Tarjetas', alimento: 'Alimento', impuestos: 'Impuestos', cuidadoPersonal: 'Cuidado Personal', varios: 'Varios', seguros: 'Seguros', ahorros: 'Ahorros' };
-            const categoriasIngresos = { salario: 'Salario', freelance: 'Freelance', inversiones: 'Inversiones', alquiler: 'Alquiler', negocio: 'Negocio', bonos: 'Bonos', otros: 'Otros' };
-            const categoriasDeudas = { prestamo: 'Préstamo Personal', hipoteca: 'Hipoteca', tarjetaCredito: 'Tarjeta de Crédito', coche: 'Préstamo Coche', familiar: 'Deuda Familiar' };
-
-            // --- LÓGICA DE NEGOCIO ---
-            const agregarTransaccion = () => {
-                const hoy = new Date().toISOString().split('T')[0];
-                setTransacciones([...transacciones, { tipo: 'gasto', categoria: 'casa', concepto: '', monto: 0, interes: 0, fecha: hoy }]);
-            };
-
-            const eliminarTransaccion = (index) => setTransacciones(transacciones.filter((_, i) => i !== index));
+        // Intentar capturar errores de ejecución
+        try {
+            const { useState, useEffect } = React;
             
-            const actualizarTransaccion = (index, campo, valor) => {
-                const nuevas = [...transacciones];
-                if (campo === 'monto' || campo === 'interes') {
-                    nuevas[index][campo] = Math.max(0, parseFloat(valor) || 0);
-                } else {
-                    nuevas[index][campo] = valor;
-                }
-                setTransacciones(nuevas);
-            };
+            // Acceso seguro a Recharts desde el CDN
+            const { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } = window.Recharts;
 
-            const calcularTotalDeuda = (m, i) => m + (m * (i / 100));
+            function App() {
+                const [transacciones, setTransacciones] = useState([]);
+                const [cargando, setCargando] = useState(true);
 
-            // --- CÁLCULOS TOTALES ---
-            const totalIngresos = transacciones.filter(t => t.tipo === 'ingreso').reduce((sum, t) => sum + t.monto, 0);
-            const totalGastos = transacciones.filter(t => t.tipo === 'gasto').reduce((sum, t) => sum + t.monto, 0);
-            const totalDeudas = transacciones.filter(t => t.tipo === 'deuda').reduce((sum, t) => sum + calcularTotalDeuda(t.monto, t.interes), 0);
-            const diferencia = totalIngresos - totalGastos - totalDeudas;
+                useEffect(() => {
+                    const saved = localStorage.getItem('finanzas_data');
+                    if (saved) setTransacciones(JSON.parse(saved));
+                    setCargando(false);
+                    // Quitar el cargador manual una vez que React tome el control
+                    document.getElementById('loader')?.remove();
+                }, []);
 
-            // --- PREPARAR GRÁFICOS ---
-            const COLORES = ['#3b82f6', '#10b981', '#ef4444', '#f59e0b', '#8b5cf6', '#ec4899'];
-            
-            const getChartData = (tipo, cats) => {
-                return Object.entries(cats).map(([key, label]) => {
-                    const val = transacciones.filter(t => t.tipo === tipo && t.categoria === key)
-                        .reduce((sum, t) => sum + (tipo === 'deuda' ? calcularTotalDeuda(t.monto, t.interes) : t.monto), 0);
-                    return { name: label, value: val };
-                }).filter(d => d.value > 0);
-            };
+                useEffect(() => {
+                    if (!cargando) localStorage.setItem('finanzas_data', JSON.stringify(transacciones));
+                }, [transacciones, cargando]);
 
-            if (cargando) return <div className="h-screen flex items-center justify-center bg-slate-900 text-white font-bold">Cargando...</div>;
+                const total = transacciones.reduce((acc, t) => t.tipo === 'ingreso' ? acc + t.monto : acc - t.monto, 0);
 
-            return (
-                <div className={`min-h-screen transition-colors ${modoOscuro ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'} p-4 sm:p-8`}>
-                    <div className="max-w-6xl mx-auto">
-                        
-                        {/* HEADER */}
-                        <div className="flex justify-between items-center mb-8">
-                            <h1 className="text-3xl font-black tracking-tight text-blue-500">FinanzasPro</h1>
-                            <div className="flex gap-3">
-                                <button onClick={() => setMostrarConfirmacion(true)} className="p-3 bg-red-500/10 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition"><Icon name="reset" /></button>
-                                <button onClick={() => setModoOscuro(!modoOscuro)} className="p-3 bg-blue-500/10 text-blue-500 rounded-2xl transition"><Icon name={modoOscuro ? "sun" : "moon"} /></button>
-                            </div>
+                return (
+                    <div className="min-h-screen bg-slate-950 text-white p-6 font-sans">
+                        <header className="mb-8">
+                            <h1 className="text-3xl font-black text-blue-500">FinanzasPro</h1>
+                            <p className="opacity-50">App para Argentina</p>
+                        </header>
+
+                        <div className="bg-blue-600 p-8 rounded-[2rem] text-center mb-8 shadow-2xl shadow-blue-500/20">
+                            <p className="text-xs uppercase font-bold tracking-widest mb-1">Saldo Disponible</p>
+                            <h2 className="text-5xl font-black">${total.toLocaleString()}</h2>
                         </div>
 
-                        {/* TARJETAS DE RESUMEN */}
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                            {[
-                                { label: 'Ingresos', val: totalIngresos, col: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-                                { label: 'Gastos', val: totalGastos, col: 'text-red-500', bg: 'bg-red-500/10' },
-                                { label: 'Deudas', val: totalDeudas, col: 'text-amber-500', bg: 'bg-amber-500/10' },
-                                { label: 'Balance', val: diferencia, col: diferencia >= 0 ? 'text-blue-500' : 'text-orange-500', bg: diferencia >= 0 ? 'bg-blue-500/10' : 'bg-orange-500/10' }
-                            ].map((card, i) => (
-                                <div key={i} className={`${card.bg} p-5 rounded-3xl border border-white/5`}>
-                                    <p className="text-xs font-bold uppercase tracking-widest opacity-60 mb-1">{card.label}</p>
-                                    <p className={`text-2xl font-black ${card.col}`}>${card.val.toLocaleString()}</p>
-                                </div>
-                            ))}
-                        </div>
+                        <button 
+                            onClick={() => setTransacciones([...transacciones, {tipo: 'gasto', monto: 1000, fecha: new Date().toLocaleDateString()}])}
+                            className="w-full bg-slate-800 p-4 rounded-2xl font-bold mb-6 border border-white/5"
+                        >
+                            + Prueba rápida de gasto ($1.000)
+                        </button>
 
-                        {/* SECCIÓN TRANSACCIONES */}
-                        <div className={`${modoOscuro ? 'bg-slate-900' : 'bg-white'} rounded-3xl shadow-2xl p-6 mb-8 border border-white/5`}>
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-xl font-bold flex items-center gap-2"><Icon name="dollar" className="text-blue-500"/> Movimientos</h2>
-                                <button onClick={agregarTransaccion} className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-2xl font-bold text-sm flex items-center gap-2 transition shadow-lg shadow-blue-600/20">
-                                    <Icon name="plus" size={18} /> Agregar
-                                </button>
-                            </div>
-                            
-                            <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 dark-scrollbar">
-                                {transacciones.map((t, i) => (
-                                    <div key={i} className={`p-4 rounded-2xl border ${modoOscuro ? 'bg-slate-800/50 border-white/5' : 'bg-slate-50 border-slate-200'} flex flex-wrap gap-4 items-center`}>
-                                        <input type="date" value={t.fecha} onChange={e => actualizarTransaccion(i, 'fecha', e.target.value)} className="bg-transparent outline-none text-sm font-medium" />
-                                        <select value={t.tipo} onChange={e => actualizarTransaccion(i, 'tipo', e.target.value)} className="bg-transparent outline-none text-sm font-black text-blue-500 uppercase">
-                                            <option value="gasto">Gasto</option>
-                                            <option value="ingreso">Ingreso</option>
-                                            <option value="deuda">Deuda</option>
-                                        </select>
-                                        <select value={t.categoria} onChange={e => actualizarTransaccion(i, 'categoria', e.target.value)} className="bg-transparent outline-none text-sm flex-1 min-w-[120px]">
-                                            {Object.entries(t.tipo === 'ingreso' ? categoriasIngresos : t.tipo === 'gasto' ? categoriasGastos : categoriasDeudas).map(([k, v]) => (
-                                                <option key={k} value={k}>{v}</option>
-                                            ))}
-                                        </select>
-                                        <input type="text" placeholder="Concepto..." value={t.concepto} onChange={e => actualizarTransaccion(i, 'concepto', e.target.value)} className="bg-transparent outline-none text-sm flex-1 min-w-[150px] italic opacity-70" />
-                                        <div className="flex items-center gap-2 bg-slate-950/20 p-2 rounded-xl border border-white/5">
-                                            <span className="font-bold text-blue-500">$</span>
-                                            <input type="number" value={t.monto || ''} onChange={e => actualizarTransaccion(i, 'monto', e.target.value)} className="w-24 bg-transparent outline-none font-black" />
-                                        </div>
-                                        {t.tipo === 'deuda' && (
-                                            <div className="flex items-center gap-2 text-amber-500 font-bold bg-amber-500/10 px-3 py-2 rounded-xl">
-                                                <span className="text-xs">INT:</span>
-                                                <input type="number" value={t.interes || ''} onChange={e => actualizarTransaccion(i, 'interes', e.target.value)} className="w-10 bg-transparent outline-none" />
-                                                <span className="text-xs">%</span>
-                                            </div>
-                                        )}
-                                        <button onClick={() => eliminarTransaccion(i)} className="text-red-500 hover:scale-110 transition"><Icon name="trash" /></button>
-                                    </div>
-                                ))}
-                                {transacciones.length === 0 && <p className="text-center py-10 opacity-30 font-medium">No hay movimientos registrados.</p>}
-                            </div>
-                        </div>
-
-                        {/* GRÁFICOS */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {['ingreso', 'gasto', 'deuda'].map(tipo => (
-                                <div key={tipo} className={`${modoOscuro ? 'bg-slate-900' : 'bg-white'} p-6 rounded-3xl border border-white/5 h-[350px] shadow-xl`}>
-                                    <h3 className="text-center font-black uppercase tracking-widest text-sm mb-4 opacity-50">{tipo}s por Categoría</h3>
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie 
-                                                data={getChartData(tipo, tipo === 'ingreso' ? categoriasIngresos : tipo === 'gasto' ? categoriasGastos : categoriasDeudas)} 
-                                                cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value"
-                                            >
-                                                {getChartData(tipo, {}).map((_, idx) => <Cell key={idx} fill={COLORES[idx % COLORES.length]} stroke="none" />)}
-                                            </Pie>
-                                            <Tooltip contentStyle={{ borderRadius: '15px', border: 'none', fontWeight: 'bold' }} />
-                                            <Legend iconType="circle" />
-                                        </PieChart>
-                                    </ResponsiveContainer>
+                        <div className="space-y-4">
+                            {transacciones.map((t, i) => (
+                                <div key={i} className="bg-white/5 p-4 rounded-2xl flex justify-between border border-white/5">
+                                    <span>Gasto de prueba</span>
+                                    <span className="font-bold text-red-400">-${t.monto}</span>
                                 </div>
                             ))}
                         </div>
                     </div>
+                );
+            }
 
-                    {/* MODAL REINICIAR */}
-                    {mostrarConfirmacion && (
-                        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-6 z-50">
-                            <div className={`${modoOscuro ? 'bg-slate-900' : 'bg-white'} p-8 rounded-[40px] max-w-sm w-full shadow-2xl border border-white/5`}>
-                                <h3 className="text-2xl font-black mb-2">¿Borrar todo?</h3>
-                                <p className="opacity-60 mb-8 text-sm">Esta acción es irreversible y eliminará todos tus datos locales.</p>
-                                <div className="flex gap-3">
-                                    <button onClick={() => setMostrarConfirmacion(false)} className="flex-1 py-4 rounded-2xl font-bold bg-slate-800">No, volver</button>
-                                    <button onClick={() => { setTransacciones([]); setMostrarConfirmacion(false); }} className="flex-1 py-4 rounded-2xl font-bold bg-red-600 text-white">Sí, borrar</button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(<App />);
+
+            // Registro de Service Worker con ruta relativa
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('./sw.js').catch(err => console.log("SW no registrado"));
+            }
+        } catch (error) {
+            document.getElementById('root').innerHTML = `
+                <div style="color: white; padding: 20px; font-family: sans-serif;">
+                    <h1>Error detectado:</h1>
+                    <p>${error.message}</p>
                 </div>
-            );
-        }
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<PresupuestoMensual />);
-
-        // --- SERVICE WORKER (PWA) ---
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW error', err));
-            });
+            `;
         }
     </script>
 </body>
