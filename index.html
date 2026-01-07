@@ -4,73 +4,75 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>FinanzasPro Argentina</title>
-    
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#0f172a">
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.10.3/Recharts.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/recharts/umd/Recharts.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-    <style>
-        body { background-color: #0f172a; margin: 0; color: white; font-family: sans-serif; }
-        .btn-retry { background: #3b82f6; padding: 12px 24px; border-radius: 15px; font-bold; margin-top: 20px; }
-    </style>
 </head>
-<body>
+<body style="background-color: #0f172a; color: white; margin: 0;">
     <div id="root">
-        <div style="height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px;">
-            <p>Cargando componentes...</p>
-            <p style="font-size: 10px; opacity: 0.5; margin-top: 10px;">Si esto tarda mucho, toca el botón de abajo</p>
-            <button onclick="window.location.reload(true)" class="btn-retry">Recargar App</button>
+        <div id="loading-status" style="height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: sans-serif;">
+            <div style="border: 3px solid #3b82f6; border-top-color: transparent; width: 30px; height: 30px; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            <p id="status-text" style="margin-top: 20px; font-size: 14px; opacity: 0.6;">Verificando recursos...</p>
         </div>
     </div>
+
+    <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
 
     <script type="text/babel">
         const { useState, useEffect } = React;
 
         function App() {
-            // Verificamos si la librería existe en el objeto global del navegador
-            const LibGraficos = window.Recharts;
+            const [intento, setIntento] = useState(0);
 
-            if (!LibGraficos) {
+            // Verificación profunda del objeto Recharts
+            const rechartsDisponible = !!(window.Recharts || window.recharts);
+
+            useEffect(() => {
+                if (!rechartsDisponible && intento < 5) {
+                    const timer = setTimeout(() => setIntento(i => i + 1), 1000);
+                    return () => clearTimeout(timer);
+                }
+            }, [intento, rechartsDisponible]);
+
+            if (!rechartsDisponible) {
                 return (
-                    <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
-                        <h2 className="text-xl font-bold text-red-400">⚠️ Error de Conexión</h2>
-                        <p className="opacity-60 mt-2">No se pudo cargar la librería de gráficos.</p>
-                        <button onClick={() => window.location.reload(true)} className="mt-6 bg-blue-600 px-6 py-3 rounded-2xl font-bold">
-                            Reintentar ahora
+                    <div style={{padding: '50px', textAlign: 'center', fontFamily: 'sans-serif'}}>
+                        <h2 style={{color: '#f87171'}}>⚠️ ERROR DE CARGA</h2>
+                        <p style={{fontSize: '12px', opacity: 0.7}}>No se detectó el módulo de gráficos tras 5 intentos.</p>
+                        <div style={{marginTop: '20px', background: '#1e293b', padding: '15px', borderRadius: '10px', textAlign: 'left', fontSize: '10px'}}>
+                            <strong>Debug Info:</strong><br/>
+                            - React: {typeof React !== 'undefined' ? '✅' : '❌'}<br/>
+                            - Recharts: {rechartsDisponible ? '✅' : '❌'}<br/>
+                            - Agente: {navigator.userAgent.slice(0, 50)}...
+                        </div>
+                        <button onClick={() => window.location.reload(true)} style={{marginTop: '20px', padding: '12px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold'}}>
+                            FORZAR RECARGA TOTAL
                         </button>
                     </div>
                 );
             }
 
             return (
-                <div className="min-h-screen bg-slate-950 p-6">
-                    <h1 className="text-3xl font-black text-blue-500 mb-6 text-center">FinanzasPro</h1>
-                    <div className="bg-blue-600 p-8 rounded-[2.5rem] text-center shadow-2xl">
-                        <p className="text-xs font-bold uppercase opacity-70">App Lista</p>
-                        <h2 className="text-4xl font-black">$0</h2>
+                <div className="p-6 min-h-screen bg-slate-950 flex flex-col items-center justify-center font-sans">
+                    <h1 className="text-3xl font-black text-blue-500 mb-2">FinanzasPro</h1>
+                    <p className="text-xs opacity-40 mb-10 text-center">CONEXIÓN ESTABLECIDA CON RECHARTS ✅</p>
+                    
+                    <div className="bg-slate-900 p-10 rounded-[40px] border border-white/5 text-center shadow-2xl">
+                        <p className="text-[10px] font-bold opacity-50 uppercase tracking-widest">Saldo en Cuenta</p>
+                        <h2 className="text-5xl font-black mt-2">$0,00</h2>
                     </div>
-                    <p className="text-center mt-8 opacity-40 text-[10px]">Librerías cargadas correctamente ✅</p>
                 </div>
             );
         }
 
-        // Renderizado seguro
-        try {
-            const root = ReactDOM.createRoot(document.getElementById('root'));
-            root.render(<App />);
-        } catch (e) {
-            console.error("Fallo al iniciar React", e);
-        }
-
-        // Service Worker
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js').catch(err => console.log(err));
-        }
+        // Ejecución
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
