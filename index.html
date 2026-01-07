@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Calculadora Finanzas Argentina</title>
+    <title>Calculadora de Ingresos, Gastos y Deudas</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -11,183 +11,104 @@
     <script crossorigin src="https://unpkg.com/recharts/umd/Recharts.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body { margin: 0; padding: 0; }
+        /* Evita que el celular haga zoom al tocar campos */
+        input, select { font-size: 16px !important; }
+    </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        // --- ADAPTACIÓN TÉCNICA (Para que tu código use sus nombres originales) ---
-        const { useState, useEffect } = React;
+        // --- CONFIGURACIÓN PARA QUE TU CÓDIGO FUNCIONE ---
+        const { useState, useEffect, useRef } = React;
         const { PieChart: RechartsPie, Pie, Cell, ResponsiveContainer, Legend, Tooltip } = window.Recharts;
-        
-        // Función para renderizar tus iconos de Lucide como componentes de React
-        const LucideIcon = ({ name, size = 20, className = "" }) => {
-            const ref = React.useRef(null);
+
+        // Adaptador para tus iconos de Lucide (los que usa tu código)
+        const Icon = ({ name, ...props }) => {
+            const ref = useRef(null);
             useEffect(() => {
-                if (ref.current) {
-                    lucide.createIcons({
+                if (window.lucide) {
+                    window.lucide.createIcons({
                         targets: [ref.current],
-                        icons: { [name]: lucide.icons[name] }
+                        icons: { [name]: window.lucide.icons[name] }
                     });
                 }
             }, [name]);
-            return <i ref={ref} data-lucide={name.toLowerCase()} className={className} style={{width: size, height: size}}></i>;
+            return <i ref={ref} data-lucide={name.toLowerCase()} {...props}></i>;
         };
 
-        // Mapeo de los iconos que usas en tu código
-        const PlusCircle = (p) => <LucideIcon name="PlusCircle" {...p} />;
-        const Trash2 = (p) => <LucideIcon name="Trash2" {...p} />;
-        const DollarSign = (p) => <LucideIcon name="DollarSign" {...p} />;
-        const PieChart = (p) => <LucideIcon name="PieChart" {...p} />;
-        const Moon = (p) => <LucideIcon name="Moon" {...p} />;
-        const Sun = (p) => <LucideIcon name="Sun" {...p} />;
-        const RotateCcw = (p) => <LucideIcon name="RotateCcw" {...p} />;
+        const PlusCircle = (p) => <Icon name="PlusCircle" {...p} />;
+        const Trash2 = (p) => <Icon name="Trash2" {...p} />;
+        const DollarSign = (p) => <Icon name="DollarSign" {...p} />;
+        const PieChart = (p) => <Icon name="PieChart" {...p} />;
+        const Moon = (p) => <Icon name="Moon" {...p} />;
+        const Sun = (p) => <Icon name="Sun" {...p} />;
+        const RotateCcw = (p) => <Icon name="RotateCcw" {...p} />;
 
-        // Traductor de Almacenamiento ( window.storage que pide tu código )
+        // Adaptador para window.storage (Usa la memoria de tu celular)
         window.storage = {
             get: (key) => Promise.resolve({ value: localStorage.getItem(key) }),
             set: (key, val) => { localStorage.setItem(key, val); return Promise.resolve(); },
             delete: (key) => { localStorage.removeItem(key); return Promise.resolve(); }
         };
 
-        // --- TU CÓDIGO ORIGINAL (SIN MODIFICACIONES DE LÓGICA) ---
+        // --- TU CÓDIGO LITERAL EMPIEZA AQUÍ ---
 
         function PresupuestoMensual() {
-          // Cargar datos desde el almacenamiento al iniciar
           const [transacciones, setTransacciones] = useState([]);
           const [modoOscuro, setModoOscuro] = useState(false);
           const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
           const [cargando, setCargando] = useState(true);
 
-          // Cargar datos al montar el componente
           useEffect(() => {
             const cargarDatos = async () => {
               try {
-                // Cargar transacciones
-                const resultadoTransacciones = await window.storage.get('transacciones');
-                if (resultadoTransacciones && resultadoTransacciones.value) {
-                  setTransacciones(JSON.parse(resultadoTransacciones.value));
-                }
-                // Cargar preferencia de modo oscuro
-                const resultadoModo = await window.storage.get('modoOscuro');
-                if (resultadoModo && resultadoModo.value) {
-                  setModoOscuro(JSON.parse(resultadoModo.value));
-                }
-              } catch (error) {
-                console.log('Primera vez usando la app o error al cargar:', error);
-              } finally {
-                setCargando(false);
-              }
+                const resT = await window.storage.get('transacciones');
+                if (resT && resT.value) setTransacciones(JSON.parse(resT.value));
+                const resM = await window.storage.get('modoOscuro');
+                if (resM && resM.value) setModoOscuro(JSON.parse(resM.value));
+              } catch (e) { console.log(e); } 
+              finally { setCargando(false); }
             };
             cargarDatos();
           }, []);
 
-          // Guardar transacciones automáticamente cada vez que cambien
           useEffect(() => {
-            if (!cargando && transacciones.length >= 0) {
-              const guardarTransacciones = async () => {
-                try {
-                  await window.storage.set('transacciones', JSON.stringify(transacciones));
-                } catch (error) {
-                  console.error('Error al guardar transacciones:', error);
-                }
-              };
-              guardarTransacciones();
-            }
+            if (!cargando) window.storage.set('transacciones', JSON.stringify(transacciones));
           }, [transacciones, cargando]);
 
-          // Guardar modo oscuro automáticamente
           useEffect(() => {
-            if (!cargando) {
-              const guardarModo = async () => {
-                try {
-                  await window.storage.set('modoOscuro', JSON.stringify(modoOscuro));
-                } catch (error) {
-                  console.error('Error al guardar modo oscuro:', error);
-                }
-              };
-              guardarModo();
-            }
+            if (!cargando) window.storage.set('modoOscuro', JSON.stringify(modoOscuro));
           }, [modoOscuro, cargando]);
 
-          const categoriasGastos = {
-            casa: 'Casa',
-            entretenimiento: 'Entretenimiento',
-            transporte: 'Transporte',
-            tarjetas: 'Tarjetas y Préstamos',
-            alimento: 'Alimento',
-            impuestos: 'Impuestos',
-            cuidadoPersonal: 'Cuidado Personal',
-            varios: 'Varios',
-            seguros: 'Seguros',
-            ahorros: 'Ahorros',
-            personalizada: '+ Agregar categoría personalizada'
-          };
-
-          const categoriasIngresos = {
-            salario: 'Salario',
-            freelance: 'Freelance',
-            inversiones: 'Inversiones',
-            alquiler: 'Alquiler',
-            negocio: 'Negocio',
-            bonos: 'Bonos',
-            otros: 'Otros',
-            personalizada: '+ Agregar categoría personalizada'
-          };
-
-          const categoriasDeudas = {
-            prestamo: 'Préstamo Personal',
-            hipoteca: 'Hipoteca',
-            tarjetaCredito: 'Tarjeta de Crédito',
-            prestamoCoche: 'Préstamo de Coche',
-            estudiante: 'Préstamo Estudiantil',
-            familiar: 'Deuda Familiar',
-            otros: 'Otros',
-            personalizada: '+ Agregar categoría personalizada'
-          };
+          const categoriasGastos = { casa: 'Casa', entretenimiento: 'Entretenimiento', transporte: 'Transporte', tarjetas: 'Tarjetas y Préstamos', alimento: 'Alimento', impuestos: 'Impuestos', cuidadoPersonal: 'Cuidado Personal', varios: 'Varios', seguros: 'Seguros', ahorros: 'Ahorros', personalizada: '+ Agregar categoría personalizada' };
+          const categoriasIngresos = { salario: 'Salario', freelance: 'Freelance', inversiones: 'Inversiones', alquiler: 'Alquiler', negocio: 'Negocio', bonos: 'Bonos', otros: 'Otros', personalizada: '+ Agregar categoría personalizada' };
+          const categoriasDeudas = { prestamo: 'Préstamo Personal', hipoteca: 'Hipoteca', tarjetaCredito: 'Tarjeta de Crédito', prestamoCoche: 'Préstamo de Coche', estudiante: 'Préstamo Estudiantil', familiar: 'Deuda Familiar', otros: 'Otros', personalizada: '+ Agregar categoría personalizada' };
 
           const agregarTransaccion = () => {
             const hoy = new Date().toISOString().split('T')[0];
-            setTransacciones([...transacciones, { 
-               tipo: 'gasto', 
-               categoria: 'casa', 
-               concepto: '', 
-               monto: 0,
-              interes: 0, 
-              fecha: hoy 
-             }]);
+            setTransacciones([...transacciones, { tipo: 'gasto', categoria: 'casa', concepto: '', monto: 0, interes: 0, fecha: hoy }]);
           };
 
-          const eliminarTransaccion = (index) => {
-            setTransacciones(transacciones.filter((_, i) => i !== index));
-          };
+          const eliminarTransaccion = (index) => setTransacciones(transacciones.filter((_, i) => i !== index));
 
           const reiniciar = async () => {
             setTransacciones([]);
             setMostrarConfirmacion(false);
-            try {
-              await window.storage.delete('transacciones');
-            } catch (error) {
-              console.error('Error al limpiar datos:', error);
-            }
+            await window.storage.delete('transacciones');
           };
 
           const actualizarTransaccion = (index, campo, valor) => {
             const nuevas = [...transacciones];
-            if (campo === 'monto') {
-              const montoValor = parseFloat(valor) || 0;
-              nuevas[index][campo] = montoValor >= 0 ? montoValor : 0;
-            } else if (campo === 'interes') {
-              let interesValor = parseFloat(valor) || 0;
-              if (interesValor < 0) interesValor = 0;
-              if (interesValor > 300) interesValor = 300;
-              nuevas[index][campo] = interesValor;
-            } else if (campo === 'tipo') {
+            if (campo === 'monto') nuevas[index][campo] = Math.max(0, parseFloat(valor) || 0);
+            else if (campo === 'interes') nuevas[index][campo] = Math.min(300, Math.max(0, parseFloat(valor) || 0));
+            else if (campo === 'tipo') {
               nuevas[index][campo] = valor;
               if (valor !== 'deuda') nuevas[index].interes = 0;
-              if (valor === 'gasto') nuevas[index].categoria = 'casa';
-              else if (valor === 'ingreso') nuevas[index].categoria = 'salario';
-              else if (valor === 'deuda') nuevas[index].categoria = 'prestamo';
+              nuevas[index].categoria = valor === 'gasto' ? 'casa' : valor === 'ingreso' ? 'salario' : 'prestamo';
             } else if (campo === 'categoria' && valor === 'personalizada') {
               nuevas[index].categoriaPersonalizada = true;
               nuevas[index][campo] = '';
@@ -199,11 +120,7 @@
             setTransacciones(nuevas);
           };
 
-          const calcularTotalDeuda = (monto, interes) => {
-            const montoBase = parseFloat(monto) || 0;
-            const porcentajeInteres = parseFloat(interes) || 0;
-            return montoBase + (montoBase * porcentajeInteres / 100);
-          };
+          const calcularTotalDeuda = (monto, interes) => (parseFloat(monto) || 0) * (1 + (parseFloat(interes) || 0) / 100);
 
           const totalIngresos = transacciones.filter(t => t.tipo === 'ingreso').reduce((sum, t) => sum + t.monto, 0);
           const totalGastos = transacciones.filter(t => t.tipo === 'gasto').reduce((sum, t) => sum + t.monto, 0);
@@ -214,27 +131,19 @@
           const COLORES_INGRESOS = ['#065f46', '#059669', '#10b981', '#34d399', '#6ee7b7', '#a7f3d0', '#d1fae5'];
           const COLORES_DEUDAS = ['#d97706', '#f59e0b', '#fbbf24', '#fcd34d', '#b45309', '#92400e', '#78350f'];
 
-          const prepararDatos = (tipo, categorias, colores) => {
-             const base = Object.entries(categorias)
-                .filter(([key]) => key !== 'personalizada')
-                .map(([key, nombre], index) => {
-                  const total = transacciones.filter(t => t.tipo === tipo && t.categoria === key && !t.categoriaPersonalizada).reduce((sum, t) => sum + (tipo === 'deuda' ? calcularTotalDeuda(t.monto, t.interes) : t.monto), 0);
-                  return { name: nombre, value: total, color: colores[index % colores.length], key };
-                }).filter(item => item.value > 0);
-
-             const personalizadas = transacciones.filter(t => t.tipo === tipo && t.categoriaPersonalizada && t.categoria).reduce((acc, t) => {
-                  const existing = acc.find(item => item.key === t.categoria);
-                  const valor = tipo === 'deuda' ? calcularTotalDeuda(t.monto, t.interes) : t.monto;
-                  if (existing) existing.value += valor;
-                  else acc.push({ name: t.categoria, value: valor, color: colores[acc.length % colores.length], key: t.categoria });
-                  return acc;
-                }, []);
-             return [...base, ...personalizadas];
+          const obtenerDatosGrafico = (tipo, cats, colores) => {
+            const base = Object.entries(cats).filter(([k]) => k !== 'personalizada').map(([key, nombre], idx) => ({
+              name: nombre,
+              value: transacciones.filter(t => t.tipo === tipo && t.categoria === key && !t.categoriaPersonalizada).reduce((s, t) => s + (tipo === 'deuda' ? calcularTotalDeuda(t.monto, t.interes) : t.monto), 0),
+              color: colores[idx % colores.length],
+              key
+            })).filter(i => i.value > 0);
+            return base;
           };
 
-          const todosLosIngresos = prepararDatos('ingreso', categoriasIngresos, COLORES_INGRESOS);
-          const todosLosGastos = prepararDatos('gasto', categoriasGastos, COLORES_GASTOS);
-          const todasLasDeudas = prepararDatos('deuda', categoriasDeudas, COLORES_DEUDAS);
+          const todosLosIngresos = obtenerDatosGrafico('ingreso', categoriasIngresos, COLORES_INGRESOS);
+          const todosLosGastos = obtenerDatosGrafico('gasto', categoriasGastos, COLORES_GASTOS);
+          const todasLasDeudas = obtenerDatosGrafico('deuda', categoriasDeudas, COLORES_DEUDAS);
 
           const bgPrimary = modoOscuro ? 'bg-slate-900' : 'bg-slate-50';
           const bgSecondary = modoOscuro ? 'bg-slate-800' : 'bg-white';
@@ -243,16 +152,11 @@
           const borderColor = modoOscuro ? 'border-slate-700' : 'border-slate-200';
           const inputBg = modoOscuro ? 'bg-slate-700 border-slate-600 text-slate-100' : 'bg-white border-slate-300';
 
-          if (cargando) {
-            return (
-              <div className={`min-h-screen ${bgPrimary} flex items-center justify-center`}>
-                <div className={`text-center ${textPrimary}`}>
-                  <DollarSign className="w-16 h-16 mx-auto mb-4 animate-pulse text-blue-600" />
-                  <p className="text-xl font-semibold">Cargando tu presupuesto...</p>
-                </div>
-              </div>
-            );
-          }
+          if (cargando) return (
+            <div className={`min-h-screen ${bgPrimary} flex items-center justify-center`}>
+              <div className={`text-center ${textPrimary}`}><DollarSign className="w-16 h-16 mx-auto mb-4 animate-pulse text-blue-600" /><p className="text-xl font-semibold">Cargando tu presupuesto...</p></div>
+            </div>
+          );
 
           return (
             <div className={`min-h-screen ${bgPrimary} p-3 sm:p-4 transition-colors font-sans`}>
@@ -266,76 +170,63 @@
                   <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className={`${bgSecondary} rounded-2xl p-6 max-w-md w-full shadow-2xl`}>
                       <h3 className={`text-xl font-bold ${textPrimary} mb-3`}>¿Reiniciar todos los datos?</h3>
-                      <p className={`${textSecondary} mb-6`}>Esta acción eliminará todas las transacciones y no se puede deshacer.</p>
+                      <p className={`${textSecondary} mb-6`}>Esta acción eliminará todas las transacciones.</p>
                       <div className="flex gap-3 justify-end">
-                        <button onClick={() => setMostrarConfirmacion(false)} className={`px-4 py-2 rounded-lg border ${borderColor} ${textPrimary} hover:bg-slate-100 dark:hover:bg-slate-700 transition`}>Cancelar</button>
-                        <button onClick={reiniciar} className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition">Sí, reiniciar</button>
+                        <button onClick={() => setMostrarConfirmacion(false)} className={`px-4 py-2 rounded-lg border ${borderColor} ${textPrimary}`}>Cancelar</button>
+                        <button onClick={reiniciar} className="px-4 py-2 rounded-lg bg-red-600 text-white">Sí, reiniciar</button>
                       </div>
                     </div>
                   </div>
                 )}
 
-                <div className={`${bgSecondary} rounded-2xl shadow-xl p-4 sm:p-6 mb-4 sm:mb-6`}>
+                <div className={`${bgSecondary} rounded-2xl shadow-xl p-4 sm:p-6 mb-6`}>
                   <div className="flex justify-between items-center mb-4">
                     <h2 className={`text-xl sm:text-2xl font-bold ${textPrimary} flex items-center gap-2`}><DollarSign className="text-blue-600" />Resumen General</h2>
                     <div className="flex gap-2">
-                      <button onClick={() => setMostrarConfirmacion(true)} className="p-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition"><RotateCcw size={20} /></button>
-                      <button onClick={() => setModoOscuro(!modoOscuro)} className={`p-2 rounded-lg ${modoOscuro ? 'bg-slate-700 text-yellow-400' : 'bg-slate-100 text-slate-700'} hover:opacity-80 transition`}>{modoOscuro ? <Sun size={20} /> : <Moon size={20} />}</button>
+                      <button onClick={() => setMostrarConfirmacion(true)} className="p-2 rounded-lg bg-red-600 text-white"><RotateCcw size={20} /></button>
+                      <button onClick={() => setModoOscuro(!modoOscuro)} className={`p-2 rounded-lg ${modoOscuro ? 'bg-slate-700 text-yellow-400' : 'bg-slate-100 text-slate-700'}`}>{modoOscuro ? <Sun size={20} /> : <Moon size={20} />}</button>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-                    <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-xl border-2 border-green-200 dark:border-green-700"><p className="text-sm text-green-700 dark:text-green-400 font-medium">Ingresos</p><p className="text-xl sm:text-2xl font-bold text-green-800 dark:text-green-300">${totalIngresos.toFixed(2)}</p></div>
-                    <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-xl border-2 border-red-200 dark:border-red-700"><p className="text-sm text-red-700 dark:text-red-400 font-medium">Gastos</p><p className="text-xl sm:text-2xl font-bold text-red-800 dark:text-red-300">${totalGastos.toFixed(2)}</p></div>
-                    <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-xl border-2 border-yellow-200 dark:border-yellow-700"><p className="text-sm text-yellow-700 dark:text-yellow-400 font-medium">Deudas</p><p className="text-xl sm:text-2xl font-bold text-yellow-800 dark:text-yellow-300">${totalDeudas.toFixed(2)}</p></div>
-                    <div className={`p-4 rounded-xl border-2 ${diferencia >= 0 ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700' : 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700'}`}><p className={`text-sm font-medium ${diferencia >= 0 ? 'text-blue-700 dark:text-blue-400' : 'text-orange-700 dark:text-orange-400'}`}>Balance</p><p className={`text-xl sm:text-2xl font-bold ${diferencia >= 0 ? 'text-blue-800 dark:text-blue-300' : 'text-orange-800 dark:text-orange-300'}`}>${diferencia.toFixed(2)}</p></div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-xl border-2 border-green-200 dark:border-green-700 text-center"><p className="text-xs font-medium">Ingresos</p><p className="text-xl font-bold">${totalIngresos.toFixed(2)}</p></div>
+                    <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-xl border-2 border-red-200 dark:border-red-700 text-center"><p className="text-xs font-medium">Gastos</p><p className="text-xl font-bold">${totalGastos.toFixed(2)}</p></div>
+                    <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-xl border-2 border-yellow-200 dark:border-yellow-700 text-center"><p className="text-xs font-medium">Deudas</p><p className="text-xl font-bold">${totalDeudas.toFixed(2)}</p></div>
+                    <div className={`p-4 rounded-xl border-2 text-center ${diferencia >= 0 ? 'border-blue-200' : 'border-orange-200'}`}><p className="text-xs font-medium">Balance</p><p className="text-xl font-bold">${diferencia.toFixed(2)}</p></div>
                   </div>
                 </div>
 
-                <div className={`${bgSecondary} rounded-2xl shadow-xl p-4 sm:p-6 mb-4 sm:mb-6`}>
-                  <div className="flex justify-between items-center mb-4"><h2 className={`text-xl sm:text-2xl font-bold ${textPrimary}`}>Transacciones</h2><button onClick={agregarTransaccion} className="flex items-center gap-2 bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm"><PlusCircle size={18} />Agregar</button></div>
-                  <div className="max-h-96 overflow-y-auto pr-2 space-y-2">
+                <div className={`${bgSecondary} rounded-2xl shadow-xl p-4 sm:p-6 mb-6`}>
+                  <div className="flex justify-between items-center mb-4"><h2 className={`text-xl sm:text-2xl font-bold ${textPrimary}`}>Transacciones</h2><button onClick={agregarTransaccion} className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm"><PlusCircle size={18} />Agregar</button></div>
+                  <div className="max-h-96 overflow-y-auto space-y-2 pr-2">
                     {transacciones.map((t, index) => (
                       <div key={index} className={`p-3 rounded-lg border ${borderColor} ${modoOscuro ? 'bg-slate-700/30' : 'bg-slate-50'}`}>
-                        <div className="flex items-center gap-2 mb-2">
-                          <input type="date" value={t.fecha} onChange={(e) => actualizarTransaccion(index, 'fecha', e.target.value)} className={`w-32 px-2 py-1.5 border rounded text-xs ${inputBg}`} />
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          <input type="date" value={t.fecha} onChange={(e) => actualizarTransaccion(index, 'fecha', e.target.value)} className={`flex-1 px-2 py-1.5 border rounded text-xs ${inputBg}`} />
                           <select value={t.tipo} onChange={(e) => actualizarTransaccion(index, 'tipo', e.target.value)} className={`w-24 px-2 py-1.5 border rounded text-xs ${inputBg}`}><option value="gasto">Gasto</option><option value="ingreso">Ingreso</option><option value="deuda">Deuda</option></select>
-                          {t.categoriaPersonalizada ? (
-                            <input type="text" placeholder="Escribe tu categoría" value={t.categoria} onChange={(e) => actualizarTransaccion(index, 'categoriaTexto', e.target.value)} className={`flex-1 min-w-0 px-2 py-1.5 border rounded text-xs ${inputBg}`} autoFocus />
-                          ) : (
-                            <select value={t.categoria} onChange={(e) => actualizarTransaccion(index, 'categoria', e.target.value)} className={`flex-1 min-w-0 px-2 py-1.5 border rounded text-xs ${inputBg}`}>
-                              {t.tipo === 'gasto' ? Object.entries(categoriasGastos).map(([k, n]) => <option key={k} value={k}>{n}</option>) : t.tipo === 'ingreso' ? Object.entries(categoriasIngresos).map(([k, n]) => <option key={k} value={k}>{n}</option>) : Object.entries(categoriasDeudas).map(([k, n]) => <option key={k} value={k}>{n}</option>)}
-                            </select>
-                          )}
-                          <button onClick={() => eliminarTransaccion(index)} className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition"><Trash2 size={16} /></button>
+                          <select value={t.categoria} onChange={(e) => actualizarTransaccion(index, 'categoria', e.target.value)} className={`flex-1 min-w-[120px] px-2 py-1.5 border rounded text-xs ${inputBg}`}>
+                            {t.tipo === 'gasto' ? Object.entries(categoriasGastos).map(([k, n]) => <option key={k} value={k}>{n}</option>) : t.tipo === 'ingreso' ? Object.entries(categoriasIngresos).map(([k, n]) => <option key={k} value={k}>{n}</option>) : Object.entries(categoriasDeudas).map(([k, n]) => <option key={k} value={k}>{n}</option>)}
+                          </select>
+                          <button onClick={() => eliminarTransaccion(index)} className="p-1.5 text-red-600"><Trash2 size={16} /></button>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <input type="text" placeholder="Concepto" value={t.concepto} onChange={(e) => actualizarTransaccion(index, 'concepto', e.target.value)} className={`flex-1 min-w-0 px-2 py-1.5 border rounded text-xs ${inputBg}`} />
-                          <input type="number" placeholder="Monto" value={t.monto || ''} onChange={(e) => actualizarTransaccion(index, 'monto', e.target.value)} className={`w-24 px-2 py-1.5 border rounded text-xs ${inputBg}`} />
-                          {t.tipo === 'deuda' && <div className="flex items-center gap-1"><input type="number" placeholder="Interés %" value={t.interes || ''} onChange={(e) => actualizarTransaccion(index, 'interes', e.target.value)} className={`w-20 px-2 py-1.5 border rounded text-xs ${inputBg}`} /><span className={`text-xs ${textSecondary}`}>%</span></div>}
-                          {t.tipo === 'deuda' && t.monto > 0 && <div className={`px-2 py-1.5 rounded text-xs font-semibold ${modoOscuro ? 'bg-yellow-900/30 text-yellow-400' : 'bg-yellow-100 text-yellow-800'} whitespace-nowrap`}>Total: ${calcularTotalDeuda(t.monto, t.interes).toFixed(2)}</div>}
+                        <div className="flex gap-2">
+                          <input type="text" placeholder="Concepto" value={t.concepto} onChange={(e) => actualizarTransaccion(index, 'concepto', e.target.value)} className={`flex-1 px-2 py-1.5 border rounded text-xs ${inputBg}`} />
+                          <input type="number" placeholder="Monto" value={t.monto || ''} onChange={(e) => actualizarTransaccion(index, 'monto', e.target.value)} className={`w-20 px-2 py-1.5 border rounded text-xs ${inputBg}`} />
+                          {t.tipo === 'deuda' && <input type="number" placeholder="Int%" value={t.interes || ''} onChange={(e) => actualizarTransaccion(index, 'interes', e.target.value)} className={`w-12 px-2 py-1.5 border rounded text-xs ${inputBg}`} />}
                         </div>
                       </div>
                     ))}
-                    {transacciones.length === 0 && <p className={`${textSecondary} text-center py-6 text-sm`}>No hay transacciones. Haz clic en "Agregar" para comenzar.</p>}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6">
-                  { [ {titulo: 'Ingresos', data: todosLosIngresos, color: 'text-green-600'}, {titulo: 'Gastos', data: todosLosGastos, color: 'text-red-600'}, {titulo: 'Deudas', data: todasLasDeudas, color: 'text-yellow-600'} ].map((seccion, idx) => (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {[{t: 'Ingresos', d: todosLosIngresos, c: 'green'}, {t: 'Gastos', d: todosLosGastos, c: 'red'}, {t: 'Deudas', d: todasLasDeudas, c: 'yellow'}].map((s, idx) => (
                     <div key={idx} className={`${bgSecondary} rounded-2xl shadow-xl p-4 sm:p-6`}>
-                      <h2 className={`text-lg sm:text-xl font-bold ${textPrimary} mb-4 flex items-center gap-2`}><PieChart className={seccion.color} size={20} />{seccion.titulo}</h2>
-                      <div className="h-56 sm:h-64">
-                        {seccion.data.length > 0 ? (
-                          <ResponsiveContainer width="100%" height="100%">
-                            <RechartsPie>
-                              <Pie data={seccion.data} cx="50%" cy="50%" labelLine={false} label={({ percent }) => `${(percent * 100).toFixed(0)}%`} outerRadius={60} fill="#8884d8" dataKey="value">
-                                {seccion.data.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                              </Pie>
-                              <Tooltip formatter={(v) => `${v.toFixed(2)}`} /><Legend />
-                            </RechartsPie>
-                          </ResponsiveContainer>
-                        ) : <div className="h-full flex items-center justify-center text-xs opacity-50">Sin datos</div>}
-                      </div>
+                      <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><PieChart size={20} />{s.t}</h2>
+                      <div className="h-56">{s.d.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RechartsPie><Pie data={s.d} cx="50%" cy="50%" outerRadius={60} fill="#8884d8" dataKey="value">{s.d.map((e, i) => <Cell key={`c-${i}`} fill={e.color} />)}</Pie><Tooltip /><Legend /></RechartsPie>
+                        </ResponsiveContainer>
+                      ) : <div className="h-full flex items-center justify-center opacity-30">Sin datos</div>}</div>
                     </div>
                   ))}
                 </div>
