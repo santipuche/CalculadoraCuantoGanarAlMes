@@ -1,183 +1,524 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora de Finanzas</title>
-    <link rel="manifest" href="manifest.json">
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://unpkg.com/recharts/umd/Recharts.js"></script>
-    <style>
-        .recharts-responsive-container { min-height: 250px; }
-    </style>
-</head>
-<body>
-    <div id="root"></div>
+import React, { useState, useEffect } from 'react';
+import { PlusCircle, Trash2, DollarSign, PieChart, Moon, Sun, RotateCcw } from 'lucide-react';
+import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 
-    <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
-        const { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } = Recharts;
+export default function PresupuestoMensual() {
+  const [transacciones, setTransacciones] = useState([]);
+  const [modoOscuro, setModoOscuro] = useState(false);
+  const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
+  const [cargando, setCargando] = useState(true);
 
-        // Adaptación de Iconos Lucide para React vía CDN
-        const Icon = ({ name, size = 20, className = "" }) => {
-            useEffect(() => { lucide.createIcons(); }, []);
-            return <i data-lucide={name} style={{width: size, height: size}} className={className}></i>;
-        };
+  const categoriasGastos = {
+    casa: 'Casa',
+    entretenimiento: 'Entretenimiento',
+    transporte: 'Transporte',
+    tarjetas: 'Tarjetas y Préstamos',
+    alimento: 'Alimento',
+    impuestos: 'Impuestos',
+    cuidadoPersonal: 'Cuidado Personal',
+    varios: 'Varios',
+    seguros: 'Seguros',
+    ahorros: 'Ahorros',
+    personalizada: '+ Agregar categoría personalizada'
+  };
 
-        function App() {
-            const [transacciones, setTransacciones] = useState([]);
-            const [modoOscuro, setModoOscuro] = useState(false);
-            const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
-            const [cargando, setCargando] = useState(true);
+  const categoriasIngresos = {
+    salario: 'Salario',
+    freelance: 'Freelance',
+    inversiones: 'Inversiones',
+    alquiler: 'Alquiler',
+    negocio: 'Negocio',
+    bonos: 'Bonos',
+    otros: 'Otros',
+    personalizada: '+ Agregar categoría personalizada'
+  };
 
-            // CARGAR DATOS (Ahora usa LocalStorage)
-            useEffect(() => {
-                const tSaved = localStorage.getItem('transacciones');
-                const mSaved = localStorage.getItem('modoOscuro');
-                if (tSaved) setTransacciones(JSON.parse(tSaved));
-                if (mSaved) setModoOscuro(JSON.parse(mSaved));
-                setCargando(false);
-            }, []);
+  const categoriasDeudas = {
+    prestamo: 'Préstamo Personal',
+    hipoteca: 'Hipoteca',
+    tarjetaCredito: 'Tarjeta de Crédito',
+    prestamoCoche: 'Préstamo de Coche',
+    estudiante: 'Préstamo Estudiantil',
+    familiar: 'Deuda Familiar',
+    otros: 'Otros',
+    personalizada: '+ Agregar categoría personalizada'
+  };
 
-            // GUARDAR DATOS
-            useEffect(() => {
-                if (!cargando) {
-                    localStorage.setItem('transacciones', JSON.stringify(transacciones));
-                    localStorage.setItem('modoOscuro', JSON.stringify(modoOscuro));
-                }
-            }, [transacciones, modoOscuro, cargando]);
+  const storage = {
+    async get(key) {
+      try {
+        if (typeof window.storage !== 'undefined') {
+          return await window.storage.get(key);
+        }
+        const value = localStorage.getItem(key);
+        return value ? { key, value } : null;
+      } catch (e) {
+        const value = localStorage.getItem(key);
+        return value ? { key, value } : null;
+      }
+    },
+    async set(key, value) {
+      try {
+        if (typeof window.storage !== 'undefined') {
+          return await window.storage.set(key, value);
+        }
+        localStorage.setItem(key, value);
+        return { key, value };
+      } catch (e) {
+        localStorage.setItem(key, value);
+        return { key, value };
+      }
+    },
+    async delete(key) {
+      try {
+        if (typeof window.storage !== 'undefined') {
+          return await window.storage.delete(key);
+        }
+        localStorage.removeItem(key);
+        return { key, deleted: true };
+      } catch (e) {
+        localStorage.removeItem(key);
+        return { key, deleted: true };
+      }
+    }
+  };
 
-            // --- Lógica de categorías y cálculos (Tu código original) ---
-            const categoriasGastos = { casa: 'Casa', entretenimiento: 'Entretenimiento', transporte: 'Transporte', tarjetas: 'Tarjetas y Préstamos', alimento: 'Alimento', impuestos: 'Impuestos', cuidadoPersonal: 'Cuidado Personal', varios: 'Varios', seguros: 'Seguros', ahorros: 'Ahorros', personalizada: '+ Agregar personalizada' };
-            const categoriasIngresos = { salario: 'Salario', freelance: 'Freelance', inversiones: 'Inversiones', alquiler: 'Alquiler', negocio: 'Negocio', bonos: 'Bonos', otros: 'Otros', personalizada: '+ Agregar personalizada' };
-            const categoriasDeudas = { prestamo: 'Préstamo Personal', hipoteca: 'Hipoteca', tarjetaCredito: 'Tarjeta de Crédito', prestamoCoche: 'Préstamo de Coche', estudiante: 'Préstamo Estudiantil', familiar: 'Deuda Familiar', otros: 'Otros', personalizada: '+ Agregar personalizada' };
+  useEffect(() => {
+    const cargarDatos = async () => {
+      try {
+        const resultadoTransacciones = await storage.get('transacciones');
+        if (resultadoTransacciones && resultadoTransacciones.value) {
+          setTransacciones(JSON.parse(resultadoTransacciones.value));
+        }
 
-            const agregarTransaccion = () => {
-                const hoy = new Date().toISOString().split('T')[0];
-                setTransacciones([...transacciones, { tipo: 'gasto', categoria: 'casa', concepto: '', monto: 0, interes: 0, fecha: hoy }]);
-            };
+        const resultadoModo = await storage.get('modoOscuro');
+        if (resultadoModo && resultadoModo.value) {
+          setModoOscuro(JSON.parse(resultadoModo.value));
+        }
+      } catch (error) {
+        console.log('Primera vez usando la app');
+      } finally {
+        setCargando(false);
+      }
+    };
 
-            const eliminarTransaccion = (index) => setTransacciones(transacciones.filter((_, i) => i !== index));
-            
-            const reiniciar = () => {
-                setTransacciones([]);
-                setMostrarConfirmacion(false);
-                localStorage.removeItem('transacciones');
-            };
+    cargarDatos();
+  }, []);
 
-            const actualizarTransaccion = (index, campo, valor) => {
-                const nuevas = [...transacciones];
-                if (campo === 'monto') nuevas[index][campo] = parseFloat(valor) || 0;
-                else if (campo === 'categoria' && valor === 'personalizada') {
-                    nuevas[index].categoriaPersonalizada = true;
-                    nuevas[index].categoria = '';
-                } else nuevas[index][campo] = valor;
-                setTransacciones(nuevas);
-            };
+  useEffect(() => {
+    if (!cargando && transacciones.length >= 0) {
+      storage.set('transacciones', JSON.stringify(transacciones));
+    }
+  }, [transacciones, cargando]);
 
-            const calcularTotalDeuda = (monto, interes) => (monto || 0) + ((monto || 0) * (interes || 0) / 100);
+  useEffect(() => {
+    if (!cargando) {
+      storage.set('modoOscuro', JSON.stringify(modoOscuro));
+    }
+  }, [modoOscuro, cargando]);
 
-            const totalIngresos = transacciones.filter(t => t.tipo === 'ingreso').reduce((sum, t) => sum + t.monto, 0);
-            const totalGastos = transacciones.filter(t => t.tipo === 'gasto').reduce((sum, t) => sum + t.monto, 0);
-            const totalDeudas = transacciones.filter(t => t.tipo === 'deuda').reduce((sum, t) => sum + calcularTotalDeuda(t.monto, t.interes), 0);
-            const diferencia = totalIngresos - totalGastos - totalDeudas;
+  const agregarTransaccion = () => {
+    const hoy = new Date().toISOString().split('T')[0];
+    setTransacciones([...transacciones, { 
+      tipo: 'gasto', 
+      categoria: 'casa', 
+      concepto: '', 
+      monto: 0,
+      interes: 0,
+      fecha: hoy 
+    }]);
+  };
 
-            // Colores y Clases (Modo Oscuro)
-            const bgPrimary = modoOscuro ? 'bg-slate-900' : 'bg-slate-50';
-            const bgSecondary = modoOscuro ? 'bg-slate-800' : 'bg-white';
-            const textPrimary = modoOscuro ? 'text-slate-100' : 'text-slate-800';
-            const borderColor = modoOscuro ? 'border-slate-700' : 'border-slate-200';
-            const inputBg = modoOscuro ? 'bg-slate-700 border-slate-600 text-slate-100' : 'bg-white border-slate-300';
+  const eliminarTransaccion = (index) => {
+    setTransacciones(transacciones.filter((_, i) => i !== index));
+  };
 
-            if (cargando) return <div className="h-screen flex items-center justify-center">Cargando...</div>;
+  const reiniciar = async () => {
+    setTransacciones([]);
+    setMostrarConfirmacion(false);
+    await storage.delete('transacciones');
+  };
 
-            return (
-                <div className={`min-h-screen ${bgPrimary} p-4 transition-colors ${textPrimary}`}>
-                    <div className="max-w-4xl mx-auto">
-                        <header className={`${bgSecondary} p-6 rounded-2xl shadow-lg mb-6 flex justify-between items-center`}>
-                            <div>
-                                <h1 className="text-2xl font-bold flex items-center gap-2">
-                                    <Icon name="dollar-sign" className="text-blue-600" /> Mi Presupuesto
-                                </h1>
-                            </div>
-                            <div className="flex gap-2">
-                                <button onClick={() => setMostrarConfirmacion(true)} className="p-2 bg-red-600 text-white rounded-lg"><Icon name="rotate-ccw" /></button>
-                                <button onClick={() => setModoOscuro(!modoOscuro)} className="p-2 bg-slate-200 dark:bg-slate-700 rounded-lg">
-                                    {modoOscuro ? <Icon name="sun" className="text-yellow-400" /> : <Icon name="moon" />}
-                                </button>
-                            </div>
-                        </header>
+  const actualizarTransaccion = (index, campo, valor) => {
+    const nuevas = [...transacciones];
+    
+    if (campo === 'monto') {
+      const montoValor = parseFloat(valor) || 0;
+      nuevas[index][campo] = montoValor >= 0 ? montoValor : 0;
+    } else if (campo === 'interes') {
+      let interesValor = parseFloat(valor) || 0;
+      if (interesValor < 0) interesValor = 0;
+      if (interesValor > 300) interesValor = 300;
+      nuevas[index][campo] = interesValor;
+    } else if (campo === 'tipo') {
+      nuevas[index][campo] = valor;
+      if (valor !== 'deuda') {
+        nuevas[index].interes = 0;
+      }
+      if (valor === 'gasto') {
+        nuevas[index].categoria = 'casa';
+      } else if (valor === 'ingreso') {
+        nuevas[index].categoria = 'salario';
+      } else if (valor === 'deuda') {
+        nuevas[index].categoria = 'prestamo';
+      }
+    } else if (campo === 'categoria' && valor === 'personalizada') {
+      nuevas[index].categoriaPersonalizada = true;
+      nuevas[index][campo] = '';
+    } else if (campo === 'categoriaTexto') {
+      nuevas[index].categoria = valor;
+    } else {
+      nuevas[index][campo] = valor;
+    }
+    
+    setTransacciones(nuevas);
+  };
 
-                        {/* RESUMEN CARDS */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                            <div className="bg-green-100 dark:bg-green-900/30 p-4 rounded-xl border border-green-200">
-                                <p className="text-xs text-green-700 font-bold uppercase">Ingresos</p>
-                                <p className="text-xl font-bold">${totalIngresos.toFixed(2)}</p>
-                            </div>
-                            <div className="bg-red-100 dark:bg-red-900/30 p-4 rounded-xl border border-red-200">
-                                <p className="text-xs text-red-700 font-bold uppercase">Gastos</p>
-                                <p className="text-xl font-bold">${totalGastos.toFixed(2)}</p>
-                            </div>
-                            <div className="bg-yellow-100 dark:bg-yellow-900/30 p-4 rounded-xl border border-yellow-200">
-                                <p className="text-xs text-yellow-700 font-bold uppercase">Deudas</p>
-                                <p className="text-xl font-bold">${totalDeudas.toFixed(2)}</p>
-                            </div>
-                            <div className={`${diferencia >= 0 ? 'bg-blue-100' : 'bg-orange-100'} dark:bg-slate-800 p-4 rounded-xl border border-blue-200`}>
-                                <p className="text-xs font-bold uppercase">Balance</p>
-                                <p className="text-xl font-bold">${diferencia.toFixed(2)}</p>
-                            </div>
-                        </div>
+  const calcularTotalDeuda = (monto, interes) => {
+    const montoBase = parseFloat(monto) || 0;
+    const porcentajeInteres = parseFloat(interes) || 0;
+    return montoBase + (montoBase * porcentajeInteres / 100);
+  };
 
-                        {/* LISTA DE TRANSACCIONES */}
-                        <div className={`${bgSecondary} p-4 rounded-2xl shadow-lg`}>
-                            <div className="flex justify-between items-center mb-4">
-                                <h2 className="font-bold">Transacciones</h2>
-                                <button onClick={agregarTransaccion} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">+ Agregar</button>
-                            </div>
-                            <div className="space-y-3">
-                                {transacciones.map((t, i) => (
-                                    <div key={i} className={`p-3 border rounded-lg ${borderColor} flex flex-wrap gap-2 items-center`}>
-                                        <input type="date" value={t.fecha} onChange={(e)=>actualizarTransaccion(i, 'fecha', e.target.value)} className={`text-xs p-1 rounded ${inputBg}`} />
-                                        <select value={t.tipo} onChange={(e)=>actualizarTransaccion(i, 'tipo', e.target.value)} className={`text-xs p-1 rounded ${inputBg}`}>
-                                            <option value="gasto">Gasto</option>
-                                            <option value="ingreso">Ingreso</option>
-                                            <option value="deuda">Deuda</option>
-                                        </select>
-                                        <input type="text" placeholder="Concepto" value={t.concepto} onChange={(e)=>actualizarTransaccion(i, 'concepto', e.target.value)} className={`flex-1 text-xs p-1 rounded ${inputBg}`} />
-                                        <input type="number" placeholder="Monto" value={t.monto || ''} onChange={(e)=>actualizarTransaccion(i, 'monto', e.target.value)} className={`w-20 text-xs p-1 rounded ${inputBg}`} />
-                                        <button onClick={()=>eliminarTransaccion(i)} className="text-red-500"><Icon name="trash-2" size={16}/></button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                        
-                        {mostrarConfirmacion && (
-                            <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
-                                <div className={`${bgSecondary} p-6 rounded-xl max-w-xs w-full`}>
-                                    <p className="mb-4 text-center">¿Borrar todos los datos?</p>
-                                    <div className="flex gap-2">
-                                        <button onClick={()=>setMostrarConfirmacion(false)} className="flex-1 p-2 border rounded">No</button>
-                                        <button onClick={reiniciar} className="flex-1 p-2 bg-red-600 text-white rounded">Sí, borrar</button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
+  const totalIngresos = transacciones.filter(t => t.tipo === 'ingreso').reduce((sum, t) => sum + t.monto, 0);
+  const totalGastos = transacciones.filter(t => t.tipo === 'gasto').reduce((sum, t) => sum + t.monto, 0);
+  const totalDeudas = transacciones.filter(t => t.tipo === 'deuda').reduce((sum, t) => sum + calcularTotalDeuda(t.monto, t.interes), 0);
+  const diferencia = totalIngresos - totalGastos - totalDeudas;
+
+  const COLORES_GASTOS = ['#dc2626', '#ef4444', '#f87171', '#fca5a5', '#b91c1c', '#991b1b', '#7f1d1d', '#fee2e2', '#fecaca', '#dc2626'];
+  const COLORES_INGRESOS = ['#065f46', '#059669', '#10b981', '#34d399', '#6ee7b7', '#a7f3d0', '#d1fae5'];
+  const COLORES_DEUDAS = ['#d97706', '#f59e0b', '#fbbf24', '#fcd34d', '#b45309', '#92400e', '#78350f'];
+
+  const procesarCategorias = (tipo, categorias, colores) => {
+    const predefinidas = Object.entries(categorias)
+      .filter(([key]) => key !== 'personalizada')
+      .map(([key, nombre], index) => {
+        const total = transacciones.filter(t => t.tipo === tipo && t.categoria === key)
+          .reduce((sum, t) => {
+            if (tipo === 'deuda') return sum + calcularTotalDeuda(t.monto, t.interes);
+            return sum + t.monto;
+          }, 0);
+        return { name: nombre, value: total, color: colores[index], key: key };
+      }).filter(item => item.value > 0);
+
+    const personalizadas = transacciones
+      .filter(t => t.tipo === tipo && t.categoriaPersonalizada && t.categoria)
+      .reduce((acc, t) => {
+        const existing = acc.find(item => item.key === t.categoria);
+        const valor = tipo === 'deuda' ? calcularTotalDeuda(t.monto, t.interes) : t.monto;
+        if (existing) {
+          existing.value += valor;
+        } else {
+          acc.push({ name: t.categoria, value: valor, color: colores[acc.length % colores.length], key: t.categoria });
+        }
+        return acc;
+      }, []);
+
+    return [...predefinidas, ...personalizadas];
+  };
+
+  const todosLosGastos = procesarCategorias('gasto', categoriasGastos, COLORES_GASTOS);
+  const todosLosIngresos = procesarCategorias('ingreso', categoriasIngresos, COLORES_INGRESOS);
+  const todasLasDeudas = procesarCategorias('deuda', categoriasDeudas, COLORES_DEUDAS);
+
+  const bgPrimary = modoOscuro ? 'bg-slate-900' : 'bg-slate-50';
+  const bgSecondary = modoOscuro ? 'bg-slate-800' : 'bg-white';
+  const textPrimary = modoOscuro ? 'text-slate-100' : 'text-slate-800';
+  const textSecondary = modoOscuro ? 'text-slate-300' : 'text-slate-600';
+  const borderColor = modoOscuro ? 'border-slate-700' : 'border-slate-200';
+  const inputBg = modoOscuro ? 'bg-slate-700 border-slate-600 text-slate-100' : 'bg-white border-slate-300';
+
+  if (cargando) {
+    return (
+      <div className={`min-h-screen ${bgPrimary} flex items-center justify-center`}>
+        <div className={`text-center ${textPrimary}`}>
+          <DollarSign className="w-16 h-16 mx-auto mb-4 animate-pulse text-blue-600" />
+          <p className="text-xl font-semibold">Cargando tu presupuesto...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`min-h-screen ${bgPrimary} p-3 sm:p-4 transition-colors`}>
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-6">
+          <h1 className={`text-3xl sm:text-4xl font-bold ${textPrimary} mb-2`}>
+            Calculadora de Ingresos, Gastos y Deudas
+          </h1>
+          <p className={`${textSecondary} text-sm sm:text-base`}>
+            Administra tus finanzas personales de forma simple y efectiva
+          </p>
+        </div>
+
+        {mostrarConfirmacion && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className={`${bgSecondary} rounded-2xl p-6 max-w-md w-full shadow-2xl`}>
+              <h3 className={`text-xl font-bold ${textPrimary} mb-3`}>¿Reiniciar todos los datos?</h3>
+              <p className={`${textSecondary} mb-6`}>Esta acción eliminará todas las transacciones y no se puede deshacer.</p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setMostrarConfirmacion(false)}
+                  className={`px-4 py-2 rounded-lg border ${borderColor} ${textPrimary} hover:bg-slate-100 dark:hover:bg-slate-700 transition`}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={reiniciar}
+                  className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition"
+                >
+                  Sí, reiniciar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className={`${bgSecondary} rounded-2xl shadow-xl p-4 sm:p-6 mb-4 sm:mb-6`}>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className={`text-xl sm:text-2xl font-bold ${textPrimary} flex items-center gap-2`}>
+              <DollarSign className="text-blue-600" />
+              Resumen General
+            </h2>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setMostrarConfirmacion(true)}
+                className="p-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition"
+                title="Reiniciar todo"
+              >
+                <RotateCcw size={20} />
+              </button>
+              <button
+                onClick={() => setModoOscuro(!modoOscuro)}
+                className={`p-2 rounded-lg ${modoOscuro ? 'bg-slate-700 text-yellow-400' : 'bg-slate-100 text-slate-700'} hover:opacity-80 transition`}
+              >
+                {modoOscuro ? <Sun size={20} /> : <Moon size={20} />}
+              </button>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+            <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 p-4 rounded-xl border-2 border-green-200 dark:border-green-700">
+              <p className="text-sm text-green-700 dark:text-green-400 font-medium">Ingresos</p>
+              <p className="text-xl sm:text-2xl font-bold text-green-800 dark:text-green-300">${totalIngresos.toFixed(2)}</p>
+            </div>
+            <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 p-4 rounded-xl border-2 border-red-200 dark:border-red-700">
+              <p className="text-sm text-red-700 dark:text-red-400 font-medium">Gastos</p>
+              <p className="text-xl sm:text-2xl font-bold text-red-800 dark:text-red-300">${totalGastos.toFixed(2)}</p>
+            </div>
+            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 p-4 rounded-xl border-2 border-yellow-200 dark:border-yellow-700">
+              <p className="text-sm text-yellow-700 dark:text-yellow-400 font-medium">Deudas</p>
+              <p className="text-xl sm:text-2xl font-bold text-yellow-800 dark:text-yellow-300">${totalDeudas.toFixed(2)}</p>
+            </div>
+            <div className={`p-4 rounded-xl border-2 ${diferencia >= 0 ? 'bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-700' : 'bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 border-orange-200 dark:border-orange-700'}`}>
+              <p className={`text-sm font-medium ${diferencia >= 0 ? 'text-blue-700 dark:text-blue-400' : 'text-orange-700 dark:text-orange-400'}`}>Balance</p>
+              <p className={`text-xl sm:text-2xl font-bold ${diferencia >= 0 ? 'text-blue-800 dark:text-blue-300' : 'text-orange-800 dark:text-orange-300'}`}>${diferencia.toFixed(2)}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className={`${bgSecondary} rounded-2xl shadow-xl p-4 sm:p-6 mb-4 sm:mb-6`}>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className={`text-xl sm:text-2xl font-bold ${textPrimary}`}>Transacciones</h2>
+            <button
+              onClick={agregarTransaccion}
+              className="flex items-center gap-2 bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm"
+            >
+              <PlusCircle size={18} />
+              Agregar
+            </button>
+          </div>
+
+          <div className="max-h-96 overflow-y-auto pr-2 space-y-2">
+            {transacciones.map((t, index) => (
+              <div key={index} className={`p-3 rounded-lg border ${borderColor} ${modoOscuro ? 'bg-slate-700/30' : 'bg-slate-50'}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <input
+                    type="date"
+                    value={t.fecha}
+                    onChange={(e) => actualizarTransaccion(index, 'fecha', e.target.value)}
+                    className={`w-32 px-2 py-1.5 border rounded text-xs ${inputBg}`}
+                  />
+                  
+                  <select
+                    value={t.tipo}
+                    onChange={(e) => actualizarTransaccion(index, 'tipo', e.target.value)}
+                    className={`w-24 px-2 py-1.5 border rounded text-xs ${inputBg}`}
+                  >
+                    <option value="gasto">Gasto</option>
+                    <option value="ingreso">Ingreso</option>
+                    <option value="deuda">Deuda</option>
+                  </select>
+
+                  {t.categoriaPersonalizada ? (
+                    <input
+                      type="text"
+                      placeholder="Escribe tu categoría"
+                      value={t.categoria}
+                      onChange={(e) => actualizarTransaccion(index, 'categoriaTexto', e.target.value)}
+                      onBlur={() => {
+                        if (!t.categoria) {
+                          const nuevas = [...transacciones];
+                          nuevas[index].categoriaPersonalizada = false;
+                          nuevas[index].categoria = t.tipo === 'gasto' ? 'casa' : t.tipo === 'ingreso' ? 'salario' : 'prestamo';
+                          setTransacciones(nuevas);
+                        }
+                      }}
+                      className={`flex-1 min-w-0 px-2 py-1.5 border rounded text-xs ${inputBg}`}
+                      autoFocus
+                    />
+                  ) : (
+                    <select
+                      value={t.categoria}
+                      onChange={(e) => actualizarTransaccion(index, 'categoria', e.target.value)}
+                      className={`flex-1 min-w-0 px-2 py-1.5 border rounded text-xs ${inputBg}`}
+                    >
+                      {(t.tipo === 'gasto' ? Object.entries(categoriasGastos) : 
+                        t.tipo === 'ingreso' ? Object.entries(categoriasIngresos) :
+                        Object.entries(categoriasDeudas)).map(([key, nombre]) => (
+                          <option key={key} value={key}>{nombre}</option>
+                      ))}
+                    </select>
+                  )}
+
+                  <button
+                    onClick={() => eliminarTransaccion(index)}
+                    className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
-            );
-        }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="Concepto"
+                    value={t.concepto}
+                    onChange={(e) => actualizarTransaccion(index, 'concepto', e.target.value)}
+                    className={`flex-1 min-w-0 px-2 py-1.5 border rounded text-xs ${inputBg}`}
+                  />
 
-        // Registro de Service Worker para PWA
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
-        }
-    </script>
-</body>
-</html>
+                  <input
+                    type="number"
+                    placeholder="Monto"
+                    value={t.monto || ''}
+                    onChange={(e) => actualizarTransaccion(index, 'monto', e.target.value)}
+                    min="0"
+                    step="0.01"
+                    className={`w-24 px-2 py-1.5 border rounded text-xs ${inputBg}`}
+                  />
+
+                  {t.tipo === 'deuda' && (
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        placeholder="Interés %"
+                        value={t.interes || ''}
+                        onChange={(e) => actualizarTransaccion(index, 'interes', e.target.value)}
+                        min="0"
+                        max="300"
+                        step="0.1"
+                        className={`w-20 px-2 py-1.5 border rounded text-xs ${inputBg}`}
+                        title="Porcentaje de interés (0-300%)"
+                      />
+                      <span className={`text-xs ${textSecondary}`}>%</span>
+                    </div>
+                  )}
+
+                  {t.tipo === 'deuda' && t.monto > 0 && (
+                    <div className={`px-2 py-1.5 rounded text-xs font-semibold ${modoOscuro ? 'bg-yellow-900/30 text-yellow-400' : 'bg-yellow-100 text-yellow-800'} whitespace-nowrap`}>
+                      Total: ${calcularTotalDeuda(t.monto, t.interes).toFixed(2)}
+                    </div>
+                  )}
+                </div>
+
+                {t.tipo === 'deuda' && (
+                  <div className={`mt-2 text-xs ${textSecondary} flex items-center gap-1`}>
+                    <span>💡</span>
+                    <span>El interés se suma automáticamente al monto de la deuda</span>
+                  </div>
+                )}
+              </div>
+            ))}
+            
+            {transacciones.length === 0 && (
+              <p className={`${textSecondary} text-center py-6 text-sm`}>No hay transacciones. Haz clic en "Agregar" para comenzar.</p>
+            )}
+          </div>
+
+          {transacciones.length > 0 && (
+            <div className={`mt-3 pt-3 border-t ${borderColor} text-center`}>
+              <p className={`text-xs ${textSecondary}`}>
+                {transacciones.length} {transacciones.length === 1 ? 'transacción registrada' : 'transacciones registradas'}
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6">
+          {[
+            { titulo: 'Ingresos', datos: todosLosIngresos, total: totalIngresos, color: 'green' },
+            { titulo: 'Gastos', datos: todosLosGastos, total: totalGastos, color: 'red' },
+            { titulo: 'Deudas', datos: todasLasDeudas, total: totalDeudas, color: 'yellow' }
+          ].map((grafico, idx) => (
+            <div key={idx} className={`${bgSecondary} rounded-2xl shadow-xl p-4 sm:p-6`}>
+              <h2 className={`text-lg sm:text-xl font-bold ${textPrimary} mb-4 flex items-center gap-2`}>
+                <PieChart className={`text-${grafico.color}-600`} size={20} />
+                {grafico.titulo}
+              </h2>
+              <div className="h-56 sm:h-64">
+                {grafico.total > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartsPie>
+                      <Pie
+                        data={grafico.datos}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                        outerRadius={60}
+                        dataKey="value"
+                      >
+                        {grafico.datos.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
+                      <Legend />
+                    </RechartsPie>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full flex items-center justify-center">
+                    <p className={`${textSecondary} text-xs sm:text-sm`}>Sin {grafico.titulo.toLowerCase()}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          {[
+            { titulo: 'Resumen de Ingresos', datos: todosLosIngresos, color: 'green' },
+            { titulo: 'Resumen de Gastos', datos: todosLosGastos, color: 'red' },
+            { titulo: 'Resumen de Deudas', datos: todasLasDeudas, color: 'yellow' }
+          ].map((resumen, idx) => (
+            resumen.datos.length > 0 && (
+              <div key={idx} className={`${bgSecondary} rounded-2xl shadow-xl p-4 sm:p-6`}>
+                <h2 className={`text-lg sm:text-xl font-bold ${textPrimary} mb-4`}>{resumen.titulo}</h2>
+                <div className="space-y-2">
+                  {resumen.datos.map((item) => (
+                    <div key={item.key} className={`bg-gradient-to-br from-${resumen.color}-50 to-${resumen.color}-100 dark:from-${resumen.color}-900/20 dark:to-${resumen.color}-800/20 p-3 rounded-lg border border-${resumen.color}-200 dark:border-${resumen.color}-700`}>
+                      <p className={`text-xs text-${resumen.color}-700 dark:text-${resumen.color}-400 font-medium mb-1`}>{item.name}</p>
+                      <p className={`text-lg font-bold text-${resumen.color}-800 dark:text-${resumen.color}-300`}>${item.value.toFixed(2)}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
